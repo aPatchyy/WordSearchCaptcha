@@ -8,6 +8,14 @@ export class WordInfo {
         this.testedLocations = []
     }
 
+    place(location) {
+        this.location = DirectedLocation.from(location)
+    }
+
+    unplace() {
+        this.location = null
+    }
+
     clearTestedLocations() {
         this.testedLocations = []
     }
@@ -18,15 +26,12 @@ export class WordInfo {
     }
 
     equals(otherWord) {
-        return this.value === otherWord.value && 
-            this.location.equals(otherWord.location) && 
-            this.testedLocations.length === otherWord.testedLocations.length &&
-            this.testedLocations.every((location, i) => {location.equals(otherWord.testedLocations[i])})
+        return this.value === otherWord.value
     }
 
     letterAt(location) {
         let index
-        if(location.direction === DIRECTION.RIGHT || location.direction === DIRECTION.LEFT) {
+        if(this.location.direction === DIRECTION.RIGHT || this.location.direction === DIRECTION.LEFT) {
             index = Math.abs(this.location.x - location.x)
         } else {
             index = Math.abs(this.location.y - location.y)
@@ -36,7 +41,7 @@ export class WordInfo {
 
     getAllLocations() {
         let locations = []
-        if(this.location != null) {
+        if(this.location !== null) {
             for(let i=0; i<this.value.length; i++) {
                 let x = this.location.x
                 let y = this.location.y
@@ -66,31 +71,31 @@ export class WordInfo {
                         y += i
                         break
                 }
-
                 locations.push(new DirectedLocation(x, y, this.location.direction))
             }
         }
         return locations
     }
 
+
     conflict(otherWordInfo) {
         let locations = this.getAllLocations()
         let otherLocations = otherWordInfo.getAllLocations()
-        if(otherLocations.length > 0) {
-            locations.forEach(location => {
-                otherLocations.forEach(otherLocation => {
-                    // if(location.equals(otherLocation)) {
-                    //     return true
-                    // }
-                    if(location.x === otherLocation.x && location.y === otherLocation.y && location.direction !== otherLocation.direction) {
-                        print(this.letterAt(location), otherWordInfo.letterAt(otherLocation))
-                        if(this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)){
-                            print("LETTERS DIFFERENT")
-                            return true
-                        }
+        if (otherLocations.length == 0)
+            return false
+        for(let i=0; i<locations.length; i++) {
+            let location = locations[i]
+            for(let j=0; j<otherLocations.length; j++) {
+                let otherLocation = otherLocations[j]
+                if(location.equals(otherLocation)) {
+                    return true
+                }
+                if(location.x === otherLocation.x && location.y === otherLocation.y && location.direction !== otherLocation.direction) {
+                    if(this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)){
+                        return true
                     }
-                })
-            })
+                }
+            }
         }
         return false
     }

@@ -1,16 +1,14 @@
 import { WordSearch } from "./word-search.js"
+import { WORDS } from "./words.js"
 
 const print = console.log
 
-const CANVAS_SIZE = 400
 const NUMBER_OF_WORDS = 3
 const GRID_SIZE = 5
-const GRID_GAP = 3
+
+const CANVAS_SIZE = 400
 const SIZE_RATIO = CANVAS_SIZE / GRID_SIZE
-const RADIUS_THRESHOLD = SIZE_RATIO/3
-
-
-
+const RADIUS_THRESHOLD = SIZE_RATIO / 4
 
 const container = document.getElementById("captcha-container")
 const overlay = document.getElementById("overlay-canvas")
@@ -19,12 +17,14 @@ const letter_grid = document.getElementById("letter-grid")
 const underlay = document.getElementById("underlay-canvas")
 const underlay_context = underlay.getContext("2d")
 
+
+
 let current_cell = null
 let selection_start = null
 let selection_end = null
-let wordSearch = new WordSearch(["POOP", "BOND", "SEA", "TREE", "FOUND", "ZEBRA"], NUMBER_OF_WORDS, GRID_SIZE)
+let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, GRID_SIZE)
 wordSearch.generate()
-print(wordSearch)
+
 for(let i=0; i<GRID_SIZE; i++) {
     for(let j=0; j<GRID_SIZE; j++) {
         const newSpan = document.createElement("span")
@@ -34,10 +34,7 @@ for(let i=0; i<GRID_SIZE; i++) {
 }
 
 
-
-
 container.addEventListener("contextmenu", (e) => e.preventDefault())
-
 overlay.addEventListener("pointermove", handleUpdateCurrentCell)
 
 function handleUpdateCurrentCell(e) {
@@ -80,8 +77,16 @@ overlay.addEventListener("pointerup", handleSelectionEnd)
 function handleSelectionEnd(e) {
     overlay.releasePointerCapture(e.pointerId)
     underlay_context.clearRect(0,0,overlay.width, overlay.height)
-    
-    console.log(wordSearch.stringFromSelection(selection_start.x, selection_start.y,  selection_end.x, selection_end.y))
+   
+    if(selection_end !== null) {
+        let selection = wordSearch.stringFromSelection(selection_start.x, selection_start.y,  selection_end.x, selection_end.y)
+        wordSearch.checkWord(selection)
+
+        if(wordSearch.isSolved()) {
+            window.top.postMessage("success", '*');
+        }
+    }
+   
     selection_start = null
     selection_end = null
     overlay.removeEventListener("pointermove", handleSelectionMove)

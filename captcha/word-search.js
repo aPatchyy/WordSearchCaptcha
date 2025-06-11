@@ -1,5 +1,6 @@
 import { WordSearchGenerator } from "./word-search-generator.js"
-
+import { WordInfo } from "./word-info.js"
+import { reverseString } from "./util.js"
 export class WordSearch {
     constructor(availableWords, numberOfWords, sizeX, sizeY = 0) {
         this.words = []
@@ -11,11 +12,14 @@ export class WordSearch {
         this.numberOfWords = numberOfWords
     }
 
-    isSolved = () => this.wordsLeft.length == 0
+    isSolved = () => this.wordsLeft.length === 0
 
     checkWord(wordToCheck) {
-        if (words.includes(wordToCheck)) {
-            this.wordsLeft = this.wordsLeft.filter(word => wordToCheck != word)
+        if (this.words.includes(wordToCheck)) {
+            this.wordsLeft = this.wordsLeft.filter(word => wordToCheck !== word)
+            return true
+        } else if (this.words.includes(reverseString(wordToCheck))) {
+            this.wordsLeft = this.wordsLeft.filter(word => reverseString(wordToCheck) !== word)
             return true
         }
         return false
@@ -23,16 +27,22 @@ export class WordSearch {
 
     generate() {
         this.words = []
+        let wordsOfSize = this.availableWords.filter(word => word.length < Math.max(this.sizeX, this.sizeY))
         while(this.words.length < this.numberOfWords) {
-            let randomIndex = Math.floor(this.availableWords.length * Math.random())
-            let randomWord = this.availableWords[randomIndex]
+            let randomIndex = Math.floor(wordsOfSize.length * Math.random())
+            let randomWord = wordsOfSize[randomIndex]
             if(!this.words.includes(randomWord))
                 this.words.push(randomWord)
         }
         this.wordsLeft = [...this.words]
-        
-        let generator = new WordSearchGenerator(this.words, this.sizeX, this.sizeY)
-        this.letterGrid = generator.execute()
+        let wordInfos = this.words.map(word => new WordInfo(word))
+        let generator = new WordSearchGenerator(wordInfos, this.sizeX, this.sizeY)
+        try {
+            this.letterGrid = generator.execute()
+        } catch (error) {
+            console.error(error)
+            this.generate()
+        }
     }
 
     stringFromSelection(startX, startY, endX, endY) {

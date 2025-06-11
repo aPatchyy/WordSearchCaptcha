@@ -43,6 +43,7 @@
     #letter-grid {
       grid-row: 1;
       grid-column: 1;
+      text-transform: uppercase;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       grid-template-rows: repeat(5, 1fr);
@@ -65,21 +66,6 @@
   </div>
 
   <script type="module" src="main.js"></script>
-
-  <script type="text/javascript">
-
-    (function(window, document){
-      // This is how you tell the parent window that the CAPTCHA was successful.
-      function captchaSuccess() {
-        window.top.postMessage("success", '*');
-      }
-
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
-
-    })(window, document);
-  </script>
   
 </body>
 

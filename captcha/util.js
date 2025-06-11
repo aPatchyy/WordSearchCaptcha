@@ -11,6 +11,7 @@ export const DIRECTION = {
 
 
 export const print = console.log
+
 export function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -24,4 +25,8 @@ export function randomLetter(isUppercase = false) {
   const randomInt = Math.floor(Math.random() * 26);
   const charCode = startCharCode + randomInt;
   return String.fromCharCode(charCode);
+}
+
+export function reverseString(str) {
+    return str.split('').reverse().join('');
 }
