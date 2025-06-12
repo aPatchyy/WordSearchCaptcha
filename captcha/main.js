@@ -1,144 +1,163 @@
 import { WordSearch } from "./word-search.js"
 import { WORDS } from "./words.js"
-
-const print = console.log
+import { COLORS } from "./colors.js"
+import { print } from "./util.js"
 
 const NUMBER_OF_WORDS = 3
-const GRID_SIZE = 5
-
-const CANVAS_SIZE = 400
-const SIZE_RATIO = CANVAS_SIZE / GRID_SIZE
-const RADIUS_THRESHOLD = SIZE_RATIO / 4
+const ROWS = 6
+const COLUMNS = 6
 
 const container = document.getElementById("captcha-container")
-const overlay = document.getElementById("overlay-canvas")
-const overlay_context = overlay.getContext("2d")
-const letter_grid = document.getElementById("letter-grid")
-const underlay = document.getElementById("underlay-canvas")
-const underlay_context = underlay.getContext("2d")
+const containerWidth = container.getBoundingClientRect().width
+const containerHeight = container.getBoundingClientRect().height
 
+const CANVAS_WIDTH = containerWidth > containerHeight ? (COLUMNS / ROWS) * containerHeight : containerWidth
+const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS / COLUMNS) * containerWidth
+const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
+const RADIUS_THRESHOLD = SQUARE_SIZE / 4
 
+const letterGrid = document.getElementById("letter-grid")
+const underlayCanvas = document.getElementById("underlay-canvas")
+const underlayContext = underlayCanvas.getContext("2d")
+underlayCanvas.width = CANVAS_WIDTH
+underlayCanvas.height = CANVAS_HEIGHT
+underlayCanvas.globalAlpha = 0.6
 
-let current_cell = null
-let selection_start = null
-let selection_end = null
-let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, GRID_SIZE)
-wordSearch.generate()
+const selectionCanvas = document.getElementById("selection-canvas")
+const selectionContext = selectionCanvas.getContext("2d")
+selectionCanvas.width = CANVAS_WIDTH
+selectionCanvas.height = CANVAS_HEIGHT
+selectionContext.globalAlpha = 0.5
 
-for(let i=0; i<GRID_SIZE; i++) {
-    for(let j=0; j<GRID_SIZE; j++) {
-        const newSpan = document.createElement("span")
-        newSpan.textContent = wordSearch.letterGrid[i][j]
-        letter_grid.appendChild(newSpan)
+document.documentElement.style.setProperty("--grid-rows", `${ROWS}`)
+document.documentElement.style.setProperty("--grid-columns", `${COLUMNS}`)
+
+if(containerWidth / containerHeight > COLUMNS / ROWS) {
+    letterGrid.classList.add("pillar-box")
+} else {
+    letterGrid.classList.add("letter-box")
+}
+
+print(containerWidth)
+
+let selectionStart = null
+let selectionEnd = null
+let colorIndex = Math.floor(COLORS.length * Math.random())
+let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ROWS, COLUMNS)
+
+container.addEventListener("contextmenu", (e) => e.preventDefault())
+underlayCanvas.addEventListener('touchmove', (e) => e.preventDefault())
+underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
+underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
+
+function initialize() {
+    wordSearch.generate()
+    for(let i=0; i<COLUMNS; i++) {
+        for(let j=0; j<ROWS; j++) {
+            const newSpan = document.createElement("span")
+            newSpan.textContent = wordSearch.letters[i][j]
+            letterGrid.appendChild(newSpan)
+        }
     }
 }
 
-
-container.addEventListener("contextmenu", (e) => e.preventDefault())
-overlay.addEventListener("pointermove", handleUpdateCurrentCell)
-
-function handleUpdateCurrentCell(e) {
-    let rect = overlay.getBoundingClientRect();
-    let mouseX = (e.clientX - rect.left) * overlay.width / rect.width 
-    let mouseY = (e.clientY - rect.top) * overlay.height / rect.height 
-    let gridX = Math.floor(mouseX/SIZE_RATIO)
-    let gridY = Math.floor(mouseY/SIZE_RATIO)
-    let centerX = (gridX + 0.5) * SIZE_RATIO
-    let centerY = (gridY + 0.5) * SIZE_RATIO
+function handleSelectionStart(e) {
+    if(!e.isPrimary) return
+    
+    let rect = underlayCanvas.getBoundingClientRect();
+    let mouseX = (e.clientX - rect.left) * underlayCanvas.width / rect.width 
+    let mouseY = (e.clientY - rect.top) * underlayCanvas.height / rect.height 
+    let gridX = Math.floor(mouseX/SQUARE_SIZE)
+    let gridY = Math.floor(mouseY/SQUARE_SIZE)
+    let centerX = (gridX + 0.5) * SQUARE_SIZE
+    let centerY = (gridY + 0.5) * SQUARE_SIZE
     let radX = Math.abs(centerX - mouseX)
     let radY = Math.abs(centerY - mouseY)
     let rad = Math.sqrt(radX * radX + radY * radY)
     
-    if(rad < RADIUS_THRESHOLD) {
-        current_cell = {
-            x: gridX,
-            y: gridY,
-            centerX,
-            centerY
-        }
-    } else {
-        current_cell = null
+    selectionStart = {
+        x: gridX,
+        y: gridY,
+        centerX,
+        centerY
     }
-}
 
-
-overlay.addEventListener("pointerdown", handleSelectionStart)
-function handleSelectionStart(e) {
-    if(current_cell == null)
-        return
+    underlayCanvas.setPointerCapture(e.pointerId)
+    underlayCanvas.addEventListener("pointermove", handleSelectionMove)
     
-    //PREVENT MULTIPLE TOUCHES FOR PHONE
-    overlay.setPointerCapture(e.pointerId)
-    overlay.addEventListener("pointermove", handleSelectionMove)
-    selection_start = current_cell
 }
 
-overlay.addEventListener("pointerup", handleSelectionEnd)
 function handleSelectionEnd(e) {
-    overlay.releasePointerCapture(e.pointerId)
-    underlay_context.clearRect(0,0,overlay.width, overlay.height)
-   
-    if(selection_end !== null) {
-        let selection = wordSearch.stringFromSelection(selection_start.x, selection_start.y,  selection_end.x, selection_end.y)
-        wordSearch.checkWord(selection)
-
+    underlayCanvas.releasePointerCapture(e.pointerId)
+    underlayContext.clearRect(0,0,underlayCanvas.width, underlayCanvas.height)
+    if(selectionEnd !== null) {
+        
+        let selection = wordSearch.stringFromSelection(selectionStart.x, selectionStart.y,  selectionEnd.x, selectionEnd.y)
+        if(wordSearch.checkWord(selection)) {
+            drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, COLORS[colorIndex])
+            colorIndex = (colorIndex + 1) % (COLORS.length - 1)
+        } else {
+            drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, "red")
+            setTimeout(() => underlayContext.clearRect(0,0,underlayCanvas.width, underlayCanvas.height), 200)
+        }
+        
         if(wordSearch.isSolved()) {
-            window.top.postMessage("success", '*');
+            setTimeout(() => window.top.postMessage("success", '*'), 1000);
         }
     }
    
-    selection_start = null
-    selection_end = null
-    overlay.removeEventListener("pointermove", handleSelectionMove)
+    selectionStart = null
+    selectionEnd = null
+    underlayCanvas.removeEventListener("pointermove", handleSelectionMove)
 }
 
 function handleSelectionMove(e) {
-    let rect = overlay.getBoundingClientRect();
-    let mouseX = (e.clientX - rect.left) * overlay.width / rect.width 
-    let mouseY = (e.clientY - rect.top) * overlay.height / rect.height
-    let relativeX = mouseX - selection_start.centerX
-    let relativeY = mouseY - selection_start.centerY
+    let rect = underlayCanvas.getBoundingClientRect();
+    let mouseX = (e.clientX - rect.left) * underlayCanvas.width / rect.width 
+    let mouseY = (e.clientY - rect.top) * underlayCanvas.height / rect.height
+    let relativeX = mouseX - selectionStart.centerX
+    let relativeY = mouseY - selectionStart.centerY
     let relativeMagnitude = Math.sqrt(relativeX * relativeX + relativeY * relativeY) 
     let angle = Math.atan2(relativeY, relativeX)
     let snappedAngle = (Math.PI / 4) * Math.round(4 * angle / Math.PI)
-    let snapLength = ((180/Math.PI)*snappedAngle % 90 == 0 ? 1 : Math.sqrt(2)) * SIZE_RATIO
+    let snapLength = ((180/Math.PI)*snappedAngle % 90 == 0 ? 1 : Math.sqrt(2)) * SQUARE_SIZE
     let snappedMagnitude = snapLength * Math.round(relativeMagnitude / snapLength)
-    let snappedMouseX = selection_start.centerX + snappedMagnitude * Math.cos(snappedAngle)
-    let snappedMouseY = selection_start.centerY + snappedMagnitude * Math.sin(snappedAngle)
+    let snappedMouseX = selectionStart.centerX + snappedMagnitude * Math.cos(snappedAngle)
+    let snappedMouseY = selectionStart.centerY + snappedMagnitude * Math.sin(snappedAngle)
 
-    while(snappedMouseX > CANVAS_SIZE || snappedMouseX < 0 || snappedMouseY > CANVAS_SIZE || snappedMouseY < 0) {
+    while(snappedMouseX > CANVAS_WIDTH || snappedMouseX < 0 || snappedMouseY > CANVAS_HEIGHT || snappedMouseY < 0) {
         snappedMagnitude -= snapLength
-        snappedMouseX = selection_start.centerX + snappedMagnitude * Math.cos(snappedAngle)
-        snappedMouseY = selection_start.centerY + snappedMagnitude * Math.sin(snappedAngle)
+        snappedMouseX = selectionStart.centerX + snappedMagnitude * Math.cos(snappedAngle)
+        snappedMouseY = selectionStart.centerY + snappedMagnitude * Math.sin(snappedAngle)
     }
     
-    let gridX = Math.floor(snappedMouseX/SIZE_RATIO)
-    let gridY = Math.floor(snappedMouseY/SIZE_RATIO)
-    let centerX = (gridX + 0.5) * SIZE_RATIO
-    let centerY = (gridY + 0.5) * SIZE_RATIO
+    let gridX = Math.floor(snappedMouseX/SQUARE_SIZE)
+    let gridY = Math.floor(snappedMouseY/SQUARE_SIZE)
+    let centerX = (gridX + 0.5) * SQUARE_SIZE
+    let centerY = (gridY + 0.5) * SQUARE_SIZE
     
-    selection_end = {
+    selectionEnd = {
         x:gridX,
         y:gridY,
         centerX,
         centerY
     }
-
-    underlay_context.clearRect(0,0,overlay.width, overlay.height)
-    underlay_context.beginPath()
-    underlay_context.arc(selection_start.centerX, selection_start.centerY, RADIUS_THRESHOLD, 0, 2*Math.PI)
-    underlay_context.arc(snappedMouseX, snappedMouseY, RADIUS_THRESHOLD, 0, 2*Math.PI)
-    underlay_context.fillStyle = "rgba(0, 255, 255)"
-    underlay_context.fill()
-    underlay_context.closePath()
-    
-    underlay_context.beginPath()
-    underlay_context.moveTo(selection_start.centerX, selection_start.centerY)
-    underlay_context.lineTo(snappedMouseX, snappedMouseY)
-    underlay_context.lineWidth = 2 * RADIUS_THRESHOLD
-    underlay_context.strokeStyle = "rgba(0, 255, 255)"
-    underlay_context.stroke()
-    underlay_context.closePath()
+    underlayContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
+    drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, COLORS[colorIndex])
 }
+
+function drawStroke(context, startX, startY, endX, endY, radius,  color) {
+    let strokeAngle = Math.atan2(endY - startY, endX - startX)
+    let angle1 = strokeAngle + Math.PI/2
+    let angle2 = angle1 + Math.PI
+    context.beginPath()
+    context.arc(startX, startY, radius, angle1, angle2)
+    context.arc(endX, endY, radius, angle2, angle1)
+    context.fillStyle = color
+    context.fill()
+    context.closePath()
+}
+
+initialize()
 
 

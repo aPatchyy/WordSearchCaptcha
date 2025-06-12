@@ -5,7 +5,7 @@ export class WordSearch {
     constructor(availableWords, numberOfWords, sizeX, sizeY = 0) {
         this.words = []
         this.wordsLeft = []
-        this.letterGrid = []
+        this.letters = []
         this.availableWords = availableWords
         this.sizeX = sizeX
         this.sizeY = sizeY === 0 ? sizeX : sizeY
@@ -15,10 +15,10 @@ export class WordSearch {
     isSolved = () => this.wordsLeft.length === 0
 
     checkWord(wordToCheck) {
-        if (this.words.includes(wordToCheck)) {
+        if (this.wordsLeft.includes(wordToCheck)) {
             this.wordsLeft = this.wordsLeft.filter(word => wordToCheck !== word)
             return true
-        } else if (this.words.includes(reverseString(wordToCheck))) {
+        } else if (this.wordsLeft.includes(reverseString(wordToCheck))) {
             this.wordsLeft = this.wordsLeft.filter(word => reverseString(wordToCheck) !== word)
             return true
         }
@@ -27,7 +27,7 @@ export class WordSearch {
 
     generate() {
         this.words = []
-        let wordsOfSize = this.availableWords.filter(word => word.length < Math.max(this.sizeX, this.sizeY))
+        let wordsOfSize = this.availableWords.filter(word => word.length <= Math.max(this.sizeX, this.sizeY))
         while(this.words.length < this.numberOfWords) {
             let randomIndex = Math.floor(wordsOfSize.length * Math.random())
             let randomWord = wordsOfSize[randomIndex]
@@ -38,7 +38,7 @@ export class WordSearch {
         let wordInfos = this.words.map(word => new WordInfo(word))
         let generator = new WordSearchGenerator(wordInfos, this.sizeX, this.sizeY)
         try {
-            this.letterGrid = generator.execute()
+            this.letters = generator.execute()
         } catch (error) {
             console.error(error)
             this.generate()
@@ -55,13 +55,13 @@ export class WordSearch {
         }
         let x = startX
         let y = startY
-        str += this.letterGrid[y][x]
+        str += this.letters[y][x]
         for(let i=0; i<length; i++) {
             if(startX != endX)
                 x += startX < endX ? 1 : -1
             if(startY != endY)
                 y += startY < endY ? 1 : -1
-            str += this.letterGrid[y][x]
+            str += this.letters[y][x]
         }
         return str
     }
