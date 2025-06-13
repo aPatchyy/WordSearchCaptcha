@@ -49,15 +49,6 @@ export class WordSearchGenerator {
     }
 
     #placeWord(word) {
-        // let localLocator
-        // if(this.mode === OPERATION_MODE.FORWARD)
-        //     localLocator = this.globalLocator
-        // else {
-        //     this.globalLocator.add(word.location)
-        //     word.moveLocationToTested()
-        //     localLocator = this.globalLocator.excluding(word.testedLocations)
-        // }
-
         let globalExcludingTested = this.globalLocator.excluding(word.testedLocations)
         
         let localLocator

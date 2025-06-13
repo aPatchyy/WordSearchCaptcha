@@ -4,56 +4,136 @@
   <meta charset="utf-8">
   <title>WordSearch</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=refresh" />
   <style type="text/css">
     @font-face {
       font-family: proteron;
       src: url("./fonts/proteron.ttf") format('truetype');
     }
 
+    @font-face {
+      font-family: valimo;
+      src: url("./fonts/Valimo RMX.ttf") format('truetype');
+    }
+
+    :root {
+      --rows: 5;
+      --columns: 5;
+      --random-1: 0;
+      --random-2: 0;
+      --random-3: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     html,
     body {
       font-family: sans-serif;
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
       user-select: none;
       height: 100%;
+      overflow: hidden;
     }
  
     #captcha-container {
-      container-type: size;
       display: grid;
       grid-template-rows:1fr;
       grid-template-columns: 1fr;
       align-items: center;
       justify-items: center;
-      height: 100%
+      height: 100%;
+    }
+
+
+    #instructions-overlay {
+      grid-row: 1;
+      grid-column: 1;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+      background-color: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    #instructions-overlay button {
+      margin-top: 30px;
+      border: none;
+      text-decoration: none;
+      background-color: rgb(56, 56, 203);
+      color: white;
+      border-radius: 5px;
+      font-size: 1.2em;
+      width: 40%;
+      padding-block: 8px;
+      cursor: pointer;
+    }
+
+    #instructions-overlay button:hover {
+      background-color: rgb(63, 63, 213);
+    }
+
+    #wordsearch-container {
+      grid-row: 1;
+      grid-column: 1;
+      aspect-ratio: var(--columns) / var(--rows);
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      justify-items: center;
+      align-items: center;
+      margin: auto;
     }
 
     canvas {
       grid-row: 1;
       grid-column: 1;
-      outline: blue solid 1px;
       height: 100%;
+      width: 100%;
     }
 
     #letter-grid {
-      aspect-ratio: var(--grid-columns) / var(--grid-rows);
       grid-row: 1;
       grid-column: 1;
-      text-transform: uppercase;
       display: grid;
-      grid-template-columns: repeat(var(--grid-columns), 1fr);
-      grid-template-rows: repeat(var(--grid-rows), 1fr);
+      grid-template-columns: repeat(var(--columns), 1fr);
+      grid-template-rows: repeat(var(--rows), 1fr);
       justify-items: center;
       align-items: center;
-      pointer-events: none;
+      height: 100%;
+      width: 100%;
+      image-rendering: pixelated;
+      mask: url(./img/mask.png) luminance;
+      mask-position: calc(var(--random-1)*1px);
     }
 
-    span {
-      font-size: 1rem;
-      line-height: 0;
+    .letter {
+      aspect-ratio: 1;
+      display:flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      text-transform: uppercase;
+    }
+
+    #noise {
+      image-rendering: pixelated;
+      grid-row: 1;
+      grid-column: 1;
+      display: block;
+      height: 100%;
+      width: 100%;
+      background-image: url(./img/noise.png), url(./img/scribble.png);
+      background-position-x: calc(var(--random-2)*1px);
+      background-position-y: calc(var(--random-3)*1px);
     }
 
     .pillar-box {
@@ -66,18 +146,25 @@
         width: 100%;
     }
 
-
+    .pointer-none {
+      pointer-events: none;
+    }
   </style>
 </head>
 
 <body>
   <div id="captcha-container">
-    <canvas id="selection-canvas"></canvas>
-    <canvas id="underlay-canvas"></canvas>
-    <div id="letter-grid"></div>
+    <div id="wordsearch-container">
+      <canvas id="selection-canvas"></canvas>
+      <canvas id="underlay-canvas"></canvas>
+      <div id="letter-grid" class="pointer-none"></div>
+    </div>
+    <div id="noise" class="pointer-none"></div>
+    <div id="instructions-overlay">
+      <h2>Solve this word search to continue.</h1>
+        <button id="start-button">Start</button>
+    </div>
   </div>
   <script type="module" src="main.js"></script>
-  
 </body>
-
 </html>

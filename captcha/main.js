@@ -3,9 +3,9 @@ import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
 import { print } from "./util.js"
 
-const NUMBER_OF_WORDS = 3
-const ROWS = 6
-const COLUMNS = 6
+const NUMBER_OF_WORDS = 4
+const ROWS = 5
+const COLUMNS = 5
 
 const container = document.getElementById("captcha-container")
 const containerWidth = container.getBoundingClientRect().width
@@ -14,14 +14,15 @@ const containerHeight = container.getBoundingClientRect().height
 const CANVAS_WIDTH = containerWidth > containerHeight ? (COLUMNS / ROWS) * containerHeight : containerWidth
 const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS / COLUMNS) * containerWidth
 const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
-const RADIUS_THRESHOLD = SQUARE_SIZE / 4
+const STROKE_RADIUS = SQUARE_SIZE / 3.5
 
+const wordSearchContainer = document.getElementById("wordsearch-container")
 const letterGrid = document.getElementById("letter-grid")
 const underlayCanvas = document.getElementById("underlay-canvas")
 const underlayContext = underlayCanvas.getContext("2d")
 underlayCanvas.width = CANVAS_WIDTH
 underlayCanvas.height = CANVAS_HEIGHT
-underlayCanvas.globalAlpha = 0.6
+underlayContext.globalAlpha = 0.8
 
 const selectionCanvas = document.getElementById("selection-canvas")
 const selectionContext = selectionCanvas.getContext("2d")
@@ -29,21 +30,27 @@ selectionCanvas.width = CANVAS_WIDTH
 selectionCanvas.height = CANVAS_HEIGHT
 selectionContext.globalAlpha = 0.5
 
-document.documentElement.style.setProperty("--grid-rows", `${ROWS}`)
-document.documentElement.style.setProperty("--grid-columns", `${COLUMNS}`)
+document.documentElement.style.setProperty("--rows", `${ROWS}`)
+document.documentElement.style.setProperty("--columns", `${COLUMNS}`)
+document.documentElement.style.setProperty("--random-1", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+document.documentElement.style.setProperty("--random-2", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+document.documentElement.style.setProperty("--random-3", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+
 
 if(containerWidth / containerHeight > COLUMNS / ROWS) {
-    letterGrid.classList.add("pillar-box")
+    wordSearchContainer.classList.add("pillar-box")
 } else {
-    letterGrid.classList.add("letter-box")
+    wordSearchContainer.classList.add("letter-box")
 }
-
-print(containerWidth)
 
 let selectionStart = null
 let selectionEnd = null
 let colorIndex = Math.floor(COLORS.length * Math.random())
 let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ROWS, COLUMNS)
+
+document.getElementById("start-button").addEventListener('click', () => {
+    document.getElementById("instructions-overlay").style.display = "none"
+})
 
 container.addEventListener("contextmenu", (e) => e.preventDefault())
 underlayCanvas.addEventListener('touchmove', (e) => e.preventDefault())
@@ -56,6 +63,8 @@ function initialize() {
         for(let j=0; j<ROWS; j++) {
             const newSpan = document.createElement("span")
             newSpan.textContent = wordSearch.letters[i][j]
+            newSpan.classList.add("letter")
+            newSpan.style.fontSize = `${SQUARE_SIZE/2}px`
             letterGrid.appendChild(newSpan)
         }
     }
@@ -63,7 +72,6 @@ function initialize() {
 
 function handleSelectionStart(e) {
     if(!e.isPrimary) return
-    
     let rect = underlayCanvas.getBoundingClientRect();
     let mouseX = (e.clientX - rect.left) * underlayCanvas.width / rect.width 
     let mouseY = (e.clientY - rect.top) * underlayCanvas.height / rect.height 
@@ -94,10 +102,10 @@ function handleSelectionEnd(e) {
         
         let selection = wordSearch.stringFromSelection(selectionStart.x, selectionStart.y,  selectionEnd.x, selectionEnd.y)
         if(wordSearch.checkWord(selection)) {
-            drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, COLORS[colorIndex])
+            drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
             colorIndex = (colorIndex + 1) % (COLORS.length - 1)
         } else {
-            drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, "red")
+            drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, "red")
             setTimeout(() => underlayContext.clearRect(0,0,underlayCanvas.width, underlayCanvas.height), 200)
         }
         
@@ -143,7 +151,7 @@ function handleSelectionMove(e) {
         centerY
     }
     underlayContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
-    drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, RADIUS_THRESHOLD, COLORS[colorIndex])
+    drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
 }
 
 function drawStroke(context, startX, startY, endX, endY, radius,  color) {

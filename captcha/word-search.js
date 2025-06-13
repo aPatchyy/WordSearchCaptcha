@@ -40,7 +40,6 @@ export class WordSearch {
         try {
             this.letters = generator.execute()
         } catch (error) {
-            console.error(error)
             this.generate()
         }
     }
