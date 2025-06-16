@@ -1,29 +1,29 @@
 import { WordSearch } from "./word-search.js"
 import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
-import { print } from "./util.js"
+import { DIRECTION, print, randomLetter } from "./util.js"
 
 const NUMBER_OF_WORDS = 4
 const ROWS = 5
 const COLUMNS = 5
-
+const APPLY_MASK = true
+const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.UP, DIRECTION.DOWN, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
 const container = document.getElementById("captcha-container")
 const containerWidth = container.getBoundingClientRect().width
 const containerHeight = container.getBoundingClientRect().height
-
 const CANVAS_WIDTH = containerWidth > containerHeight ? (COLUMNS / ROWS) * containerHeight : containerWidth
 const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS / COLUMNS) * containerWidth
 const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
 const STROKE_RADIUS = SQUARE_SIZE / 3.5
-
+const FONT_SIZE = SQUARE_SIZE * 0.9
 const wordSearchContainer = document.getElementById("wordsearch-container")
 const letterGrid = document.getElementById("letter-grid")
+const maskedLetterGrid = document.getElementById("masked-letter-grid")
 const underlayCanvas = document.getElementById("underlay-canvas")
 const underlayContext = underlayCanvas.getContext("2d")
 underlayCanvas.width = CANVAS_WIDTH
 underlayCanvas.height = CANVAS_HEIGHT
 underlayContext.globalAlpha = 0.8
-
 const selectionCanvas = document.getElementById("selection-canvas")
 const selectionContext = selectionCanvas.getContext("2d")
 selectionCanvas.width = CANVAS_WIDTH
@@ -43,10 +43,16 @@ if(containerWidth / containerHeight > COLUMNS / ROWS) {
     wordSearchContainer.classList.add("letter-box")
 }
 
+if(APPLY_MASK) {
+    maskedLetterGrid.classList.add("mask")
+}
+
 let selectionStart = null
 let selectionEnd = null
 let colorIndex = Math.floor(COLORS.length * Math.random())
-let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ROWS, COLUMNS)
+let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, ROWS, COLUMNS)
+
+initialize()
 
 document.getElementById("start-button").addEventListener('click', () => {
     document.getElementById("instructions-overlay").style.display = "none"
@@ -57,17 +63,44 @@ underlayCanvas.addEventListener('touchmove', (e) => e.preventDefault())
 underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
 underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
 
+//FOR TESTING
+// window.addEventListener('keydown', (e) => {
+//     if(e.key == " ")
+//         refresh()
+// })
+
 function initialize() {
     wordSearch.generate()
     for(let i=0; i<COLUMNS; i++) {
         for(let j=0; j<ROWS; j++) {
+            const newMaskedSpan = document.createElement("span")
             const newSpan = document.createElement("span")
-            newSpan.textContent = wordSearch.letters[i][j]
+            const letter = wordSearch.letters[i][j]
             newSpan.classList.add("letter")
-            newSpan.style.fontSize = `${SQUARE_SIZE/2}px`
+            newSpan.style.fontSize = `${FONT_SIZE}px`
+            newSpan.textContent = letter
+            newMaskedSpan.classList.add("letter")
+            newMaskedSpan.style.fontSize = `${FONT_SIZE}px`
+            newMaskedSpan.textContent = letter === " " ? randomLetter() : letter
+            maskedLetterGrid.appendChild(newMaskedSpan)
             letterGrid.appendChild(newSpan)
         }
     }
+    
+}
+
+function refresh() {
+    underlayContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
+    selectionContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
+    letterGrid.innerHTML = ''
+    maskedLetterGrid.innerHTML = ''
+    selectionStart = null
+    selectionEnd = null
+    colorIndex = Math.floor(COLORS.length * Math.random())
+    document.documentElement.style.setProperty("--random-1", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+    document.documentElement.style.setProperty("--random-2", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+    document.documentElement.style.setProperty("--random-3", `${ 1000 * 2 *(Math.random() - 0.5)}`)
+    initialize()
 }
 
 function handleSelectionStart(e) {
@@ -103,7 +136,7 @@ function handleSelectionEnd(e) {
         let selection = wordSearch.stringFromSelection(selectionStart.x, selectionStart.y,  selectionEnd.x, selectionEnd.y)
         if(wordSearch.checkWord(selection)) {
             drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
-            colorIndex = (colorIndex + 1) % (COLORS.length - 1)
+            colorIndex = (colorIndex + 1) % COLORS.length
         } else {
             drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, "red")
             setTimeout(() => underlayContext.clearRect(0,0,underlayCanvas.width, underlayCanvas.height), 200)
@@ -165,7 +198,3 @@ function drawStroke(context, startX, startY, endX, endY, radius,  color) {
     context.fill()
     context.closePath()
 }
-
-initialize()
-
-

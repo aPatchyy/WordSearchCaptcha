@@ -2,13 +2,13 @@ import { DIRECTION, shuffle, print } from "./util.js"
 import { DirectedLocation } from "./directed-location.js"
 
 export class RandomLocator {
-    constructor(sizeX, sizeY = 0) {
+    constructor(allowedDirections, sizeX, sizeY = 0) {
         sizeY = sizeY === 0 ? sizeX : sizeY
         this.locations = []
         
         for(let i=0; i<sizeX; i++) {
             for(let j=0; j<sizeY; j++) {
-                Object.values(DIRECTION).forEach(direction => {
+                allowedDirections.forEach(direction => {
                     this.locations.push(new DirectedLocation(i, j, direction))
                 })
             }

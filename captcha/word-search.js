@@ -2,14 +2,14 @@ import { WordSearchGenerator } from "./word-search-generator.js"
 import { WordInfo } from "./word-info.js"
 import { reverseString } from "./util.js"
 export class WordSearch {
-    constructor(availableWords, numberOfWords, sizeX, sizeY = 0) {
+    constructor(availableWords, numberOfWords, allowedDirections, sizeX, sizeY = 0) {
         this.words = []
         this.wordsLeft = []
-        this.letters = []
         this.availableWords = availableWords
         this.sizeX = sizeX
         this.sizeY = sizeY === 0 ? sizeX : sizeY
         this.numberOfWords = numberOfWords
+        this.allowedDirections = allowedDirections
     }
 
     isSolved = () => this.wordsLeft.length === 0
@@ -36,7 +36,7 @@ export class WordSearch {
         }
         this.wordsLeft = [...this.words]
         let wordInfos = this.words.map(word => new WordInfo(word))
-        let generator = new WordSearchGenerator(wordInfos, this.sizeX, this.sizeY)
+        let generator = new WordSearchGenerator(wordInfos, this.allowedDirections, this.sizeX, this.sizeY)
         try {
             this.letters = generator.execute()
         } catch (error) {

@@ -8,12 +8,12 @@ const OPERATION_MODE = {
 }
 
 export class WordSearchGenerator {
-    constructor(wordList, sizeX, sizeY = 0) {
+    constructor(wordList, allowedDirections, sizeX, sizeY = 0) {
         this.wordList = wordList
         this.sizeX = sizeX
         this.sizeY = sizeY === 0 ? sizeX : sizeY
         this.mode = OPERATION_MODE.FORWARD
-        this.globalLocator = new RandomLocator(sizeX, sizeY)
+        this.globalLocator = new RandomLocator(allowedDirections, sizeX, sizeY)
     }
 
     execute() {
@@ -37,7 +37,7 @@ export class WordSearchGenerator {
             }
         }
 
-        let letterGrid = Array.from({length: this.sizeY}, _ => Array.from({length: this.sizeX}, _ => randomLetter()))
+        let letterGrid = Array.from({length: this.sizeY}, _ => Array.from({length: this.sizeX}, _ => " "))
 
         this.wordList.forEach(word => {
             let locations = word.getAllLocations()
