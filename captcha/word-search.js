@@ -1,13 +1,13 @@
 import { WordSearchGenerator } from "./word-search-generator.js"
 import { WordInfo } from "./word-info.js"
-import { reverseString } from "./util.js"
+import { reverseString, print } from "./util.js"
 export class WordSearch {
-    constructor(availableWords, numberOfWords, allowedDirections, sizeX, sizeY = 0) {
+    constructor(availableWords, numberOfWords, allowedDirections, columns, rows = 0) {
         this.words = []
         this.wordsLeft = []
         this.availableWords = availableWords
-        this.sizeX = sizeX
-        this.sizeY = sizeY === 0 ? sizeX : sizeY
+        this.columns = columns
+        this.rows = rows === 0 ? columns : rows
         this.numberOfWords = numberOfWords
         this.allowedDirections = allowedDirections
     }
@@ -27,7 +27,7 @@ export class WordSearch {
 
     generate() {
         this.words = []
-        let wordsOfSize = this.availableWords.filter(word => word.length <= Math.max(this.sizeX, this.sizeY))
+        let wordsOfSize = this.availableWords.filter(word => word.length <= Math.max(this.columns, this.rows))
         while(this.words.length < this.numberOfWords) {
             let randomIndex = Math.floor(wordsOfSize.length * Math.random())
             let randomWord = wordsOfSize[randomIndex]
@@ -36,7 +36,7 @@ export class WordSearch {
         }
         this.wordsLeft = [...this.words]
         let wordInfos = this.words.map(word => new WordInfo(word))
-        let generator = new WordSearchGenerator(wordInfos, this.allowedDirections, this.sizeX, this.sizeY)
+        let generator = new WordSearchGenerator(wordInfos, this.allowedDirections, this.columns, this.rows)
         try {
             this.letters = generator.execute()
         } catch (error) {
@@ -44,23 +44,24 @@ export class WordSearch {
         }
     }
 
-    stringFromSelection(startX, startY, endX, endY) {
+  
+    stringFromSelection(startColumn, startRow, endColumn, endRow) {
         var length
         var str = ""
-        if(startX == endX) {
-            length = Math.abs(endY - startY)
+        if(startColumn == endColumn) {
+            length = Math.abs(endRow - startRow)
         } else {
-            length = Math.abs(endX - startX)
+            length = Math.abs(endColumn - startColumn)
         }
-        let x = startX
-        let y = startY
-        str += this.letters[y][x]
+        let row = startRow
+        let column = startColumn
+        str += this.letters[row][column]
         for(let i=0; i<length; i++) {
-            if(startX != endX)
-                x += startX < endX ? 1 : -1
-            if(startY != endY)
-                y += startY < endY ? 1 : -1
-            str += this.letters[y][x]
+            if(startRow != endRow)
+                row += startRow < endRow ? 1 : -1
+            if(startColumn != endColumn)
+                column += startColumn < endColumn ? 1 : -1
+            str += this.letters[row][column]
         }
         return str
     }

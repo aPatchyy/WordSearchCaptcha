@@ -30,3 +30,13 @@ export function randomLetter(isUppercase = false) {
 export function reverseString(str) {
     return str.split('').reverse().join('');
 }
+
+export function gaussianRandom(sigma = 1, mu = 0) {
+    let u0 = Math.random()
+    let u1 = Math.random()
+    while(u0 === 0) u0 = Math.random()
+    while(u1 === 0) u1 = Math.random()
+    const z0 = Math.sqrt(-2.0 * Math.log(u0)) * Math.cos(2.0 * Math.PI * u1)
+    const z1 = Math.sqrt(-2.0 * Math.log(u0)) * Math.sin(2.0 * Math.PI * u1)
+    return [mu + sigma*z0, mu + sigma*z1]
+}

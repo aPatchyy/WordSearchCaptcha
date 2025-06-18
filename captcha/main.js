@@ -1,29 +1,30 @@
 import { WordSearch } from "./word-search.js"
 import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
-import { DIRECTION, print, randomLetter } from "./util.js"
+import { DIRECTION, gaussianRandom, print} from "./util.js"
 
 const NUMBER_OF_WORDS = 4
 const ROWS = 5
-const COLUMNS = 5
-const APPLY_MASK = true
-const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.UP, DIRECTION.DOWN, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
+const COLUMNS = 6
+const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.DOWN, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
+const DISTORTION_SCALE = 30
+
 const container = document.getElementById("captcha-container")
 const containerWidth = container.getBoundingClientRect().width
 const containerHeight = container.getBoundingClientRect().height
 const CANVAS_WIDTH = containerWidth > containerHeight ? (COLUMNS / ROWS) * containerHeight : containerWidth
 const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS / COLUMNS) * containerWidth
 const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
-const STROKE_RADIUS = SQUARE_SIZE / 3.5
-const FONT_SIZE = SQUARE_SIZE * 0.9
-const wordSearchContainer = document.getElementById("wordsearch-container")
+
+const STROKE_RADIUS = SQUARE_SIZE / 2.75
+const FONT_SIZE = SQUARE_SIZE * 0.6
+
 const letterGrid = document.getElementById("letter-grid")
-const maskedLetterGrid = document.getElementById("masked-letter-grid")
 const underlayCanvas = document.getElementById("underlay-canvas")
 const underlayContext = underlayCanvas.getContext("2d")
 underlayCanvas.width = CANVAS_WIDTH
 underlayCanvas.height = CANVAS_HEIGHT
-underlayContext.globalAlpha = 0.8
+underlayContext.globalAlpha = 0.6
 const selectionCanvas = document.getElementById("selection-canvas")
 const selectionContext = selectionCanvas.getContext("2d")
 selectionCanvas.width = CANVAS_WIDTH
@@ -32,25 +33,25 @@ selectionContext.globalAlpha = 0.5
 
 document.documentElement.style.setProperty("--rows", `${ROWS}`)
 document.documentElement.style.setProperty("--columns", `${COLUMNS}`)
+
 document.documentElement.style.setProperty("--random-1", `${ 1000 * 2 *(Math.random() - 0.5)}`)
 document.documentElement.style.setProperty("--random-2", `${ 1000 * 2 *(Math.random() - 0.5)}`)
 document.documentElement.style.setProperty("--random-3", `${ 1000 * 2 *(Math.random() - 0.5)}`)
 
-
 if(containerWidth / containerHeight > COLUMNS / ROWS) {
-    wordSearchContainer.classList.add("pillar-box")
+    letterGrid.classList.add("pillar-box")
+    underlayCanvas.classList.add("pillar-box")
+    selectionCanvas.classList.add("pillar-box")
 } else {
-    wordSearchContainer.classList.add("letter-box")
+    letterGrid.classList.add("letter-box")
+    underlayCanvas.classList.add("letter-box")
+    selectionCanvas.classList.add("letter-box")
 }
 
-if(APPLY_MASK) {
-    maskedLetterGrid.classList.add("mask")
-}
-
+let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, COLUMNS, ROWS)
+let colorIndex = Math.floor(COLORS.length * Math.random())
 let selectionStart = null
 let selectionEnd = null
-let colorIndex = Math.floor(COLORS.length * Math.random())
-let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, ROWS, COLUMNS)
 
 initialize()
 
@@ -64,36 +65,34 @@ underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
 underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
 
 //FOR TESTING
-// window.addEventListener('keydown', (e) => {
-//     if(e.key == " ")
-//         refresh()
-// })
+window.addEventListener('keydown', (e) => {
+    if(e.key == " ")
+        refresh()
+})
 
-function initialize() {
+
+async function initialize() {
     wordSearch.generate()
-    for(let i=0; i<COLUMNS; i++) {
-        for(let j=0; j<ROWS; j++) {
-            const newMaskedSpan = document.createElement("span")
+    for(let row=0; row<ROWS; row++) {
+        for(let column=0; column<COLUMNS; column++) {
+            const div = document.createElement("div")
             const newSpan = document.createElement("span")
-            const letter = wordSearch.letters[i][j]
-            newSpan.classList.add("letter")
+            const letter = wordSearch.letters[row][column]
             newSpan.style.fontSize = `${FONT_SIZE}px`
             newSpan.textContent = letter
-            newMaskedSpan.classList.add("letter")
-            newMaskedSpan.style.fontSize = `${FONT_SIZE}px`
-            newMaskedSpan.textContent = letter === " " ? randomLetter() : letter
-            maskedLetterGrid.appendChild(newMaskedSpan)
-            letterGrid.appendChild(newSpan)
+            div.appendChild(newSpan)
+            letterGrid.append(div)
         }
     }
-    
+    let map = await createDisplacementMap(39, 30)
+    document.querySelector("feImage").setAttribute("href", map)
+    document.querySelector("feDisplacementMap").setAttribute("scale", DISTORTION_SCALE)
 }
 
 function refresh() {
     underlayContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
     selectionContext.clearRect(0,0, underlayCanvas.width, underlayCanvas.height)
     letterGrid.innerHTML = ''
-    maskedLetterGrid.innerHTML = ''
     selectionStart = null
     selectionEnd = null
     colorIndex = Math.floor(COLORS.length * Math.random())
@@ -105,24 +104,21 @@ function refresh() {
 
 function handleSelectionStart(e) {
     if(!e.isPrimary) return
+    
     let rect = underlayCanvas.getBoundingClientRect();
     let mouseX = (e.clientX - rect.left) * underlayCanvas.width / rect.width 
     let mouseY = (e.clientY - rect.top) * underlayCanvas.height / rect.height 
-    let gridX = Math.floor(mouseX/SQUARE_SIZE)
-    let gridY = Math.floor(mouseY/SQUARE_SIZE)
-    let centerX = (gridX + 0.5) * SQUARE_SIZE
-    let centerY = (gridY + 0.5) * SQUARE_SIZE
-    let radX = Math.abs(centerX - mouseX)
-    let radY = Math.abs(centerY - mouseY)
-    let rad = Math.sqrt(radX * radX + radY * radY)
+    let column = Math.floor(mouseX/SQUARE_SIZE)
+    let row = Math.floor(mouseY/SQUARE_SIZE)
+    let centerX = (column + 0.5) * SQUARE_SIZE
+    let centerY = (row + 0.5) * SQUARE_SIZE
     
     selectionStart = {
-        x: gridX,
-        y: gridY,
+        column,
+        row,
         centerX,
         centerY
     }
-
     underlayCanvas.setPointerCapture(e.pointerId)
     underlayCanvas.addEventListener("pointermove", handleSelectionMove)
     
@@ -133,7 +129,7 @@ function handleSelectionEnd(e) {
     underlayContext.clearRect(0,0,underlayCanvas.width, underlayCanvas.height)
     if(selectionEnd !== null) {
         
-        let selection = wordSearch.stringFromSelection(selectionStart.x, selectionStart.y,  selectionEnd.x, selectionEnd.y)
+        let selection = wordSearch.stringFromSelection(selectionStart.column, selectionStart.row,  selectionEnd.column, selectionEnd.row)
         if(wordSearch.checkWord(selection)) {
             drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
             colorIndex = (colorIndex + 1) % COLORS.length
@@ -172,14 +168,14 @@ function handleSelectionMove(e) {
         snappedMouseY = selectionStart.centerY + snappedMagnitude * Math.sin(snappedAngle)
     }
     
-    let gridX = Math.floor(snappedMouseX/SQUARE_SIZE)
-    let gridY = Math.floor(snappedMouseY/SQUARE_SIZE)
-    let centerX = (gridX + 0.5) * SQUARE_SIZE
-    let centerY = (gridY + 0.5) * SQUARE_SIZE
+    let column = Math.floor(snappedMouseX/SQUARE_SIZE)
+    let row = Math.floor(snappedMouseY/SQUARE_SIZE)
+    let centerX = (column + 0.5) * SQUARE_SIZE
+    let centerY = (row + 0.5) * SQUARE_SIZE
     
     selectionEnd = {
-        x:gridX,
-        y:gridY,
+        column,
+        row,
         centerX,
         centerY
     }
@@ -197,4 +193,23 @@ function drawStroke(context, startX, startY, endX, endY, radius,  color) {
     context.fillStyle = color
     context.fill()
     context.closePath()
+}
+
+function createDisplacementMap(width, height, sigma = 0.2) {
+    const canvas = new OffscreenCanvas(width, height)
+    const context = canvas.getContext("2d")
+    const imageData = context.createImageData(width, height)
+    const data = imageData.data
+    for(let i=0; i<data.length; i++) {
+        for(let j=0; j<2; j++) {
+            let gaussianPair = gaussianRandom(sigma)
+            data[i + j] = 127 + Math.floor(128 * gaussianPair[0])
+            data[i + j] = 127 + Math.floor(128 * gaussianPair[1])
+            gaussianPair = gaussianRandom(0.15)
+            data[i + j + 2] = 127 + Math.floor(128 * gaussianPair[0])
+            data[i + j + 2] = 127 + Math.floor(128 * gaussianPair[1])
+        }
+    }
+    context.putImageData(imageData, 0, 0)
+    return canvas.convertToBlob().then(blob => {return URL.createObjectURL(blob)})
 }

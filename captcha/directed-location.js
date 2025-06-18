@@ -1,18 +1,18 @@
 export class DirectedLocation {
-    constructor(x, y, direction) {
-        this.x = x
-        this.y = y
+    constructor(column, row, direction) {
+        this.column = column
+        this.row = row
         this.direction = direction
     }
 
     static from(otherLocation) {
-        return new DirectedLocation(otherLocation.x, otherLocation.y, otherLocation.direction)
+        return new DirectedLocation(otherLocation.column, otherLocation.row, otherLocation.direction)
     }
 
     // error if otherLocation is null
     equals(otherLocation) {
-        return this.x == otherLocation.x && 
-            this.y == otherLocation.y &&
+        return this.column == otherLocation.column && 
+            this.row == otherLocation.row &&
             this.direction == otherLocation.direction
     }
 

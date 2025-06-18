@@ -30,32 +30,34 @@ export class WordInfo {
     }
 
     letterAt(location) {
-        let index
+        let index = -1
         if(this.location.direction === DIRECTION.RIGHT || this.location.direction === DIRECTION.LEFT) {
-            index = Math.abs(this.location.x - location.x)
-        } else {
-            index = Math.abs(this.location.y - location.y)
+            index = Math.abs(this.location.column - location.column)
+        } else if(this.location.direction === DIRECTION.UP || this.location.direction === DIRECTION.DOWN) {
+            index = Math.abs(this.location.row - location.row)
+        } else if(Math.abs(this.location.column - location.column) === Math.abs(this.location.row - location.row)){
+            index = Math.abs(this.location.column - location.column)
         }
-        return this.value[index]
+        return index < 0 ? null : this.value[index]
     }
 
     getAllLocations() {
         let locations = []
         if(this.location !== null) {
             for(let i=0; i<this.value.length; i++) {
-                let x = this.location.x
-                let y = this.location.y
+                let column = this.location.column
+                let row = this.location.row
 
                 switch(this.location.direction) {
                     case DIRECTION.RIGHT:
                     case DIRECTION.UP_RIGHT:
                     case DIRECTION.DOWN_RIGHT:
-                        x += i
+                        column += i
                         break
                     case DIRECTION.LEFT:
                     case DIRECTION.UP_LEFT:
                     case DIRECTION.DOWN_LEFT:
-                        x -= i
+                        column -= i
                         break
                 }
 
@@ -63,15 +65,15 @@ export class WordInfo {
                     case DIRECTION.UP:
                     case DIRECTION.UP_RIGHT:
                     case DIRECTION.UP_LEFT:
-                        y -= i
+                        row -= i
                         break
                     case DIRECTION.DOWN:
                     case DIRECTION.DOWN_RIGHT:
                     case DIRECTION.DOWN_LEFT:
-                        y += i
+                        row += i
                         break
                 }
-                locations.push(new DirectedLocation(x, y, this.location.direction))
+                locations.push(new DirectedLocation(column, row, this.location.direction))
             }
         }
         return locations
@@ -90,7 +92,7 @@ export class WordInfo {
                 if(location.equals(otherLocation)) {
                     return true
                 }
-                if(location.x === otherLocation.x && location.y === otherLocation.y && location.direction !== otherLocation.direction) {
+                if(location.column === otherLocation.column && location.row === otherLocation.row && location.direction !== otherLocation.direction) {
                     if(this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)){
                         return true
                     }

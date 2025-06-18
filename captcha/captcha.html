@@ -4,187 +4,27 @@
   <meta charset="utf-8">
   <title>WordSearch</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style type="text/css">
-    @font-face {
-      font-family: medodica;
-      src: url("./fonts/MedodicaRegular.otf") format('truetype');
-    }
-
-    @font-face {
-      font-family: valimo;
-      src: url("./fonts/Valimo RMX.ttf") format('truetype');
-    }
-
-    @font-face {
-      font-family: paradox;
-      src: url("./fonts/Paradox.ttf") format('truetype');
-    }
-
-    :root {
-      --rows: 5;
-      --columns: 5;
-      --random-1: 0;
-      --random-2: 0;
-      --random-3: 0;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      font-family: sans-serif;
-      user-select: none;
-      height: 100%;
-      overflow: hidden;
-    }
- 
-    #captcha-container {
-      display: grid;
-      grid-template-rows:1fr;
-      grid-template-columns: 1fr;
-      align-items: center;
-      justify-items: center;
-      height: 100%;
-    }
-
-
-    #instructions-overlay {
-      grid-row: 1;
-      grid-column: 1;
-      height: 100%;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 25px;
-      background-color: rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      text-align: center;
-    }
-
-    #instructions-overlay button {
-      margin-top: 30px;
-      border: none;
-      text-decoration: none;
-      background-color: rgb(56, 56, 203);
-      color: white;
-      border-radius: 5px;
-      font-size: 1.2em;
-      width: 40%;
-      padding-block: 8px;
-      cursor: pointer;
-    }
-
-    #instructions-overlay button:hover {
-      background-color: rgb(63, 63, 213);
-    }
-
-    #wordsearch-container {
-      grid-row: 1;
-      grid-column: 1;
-      aspect-ratio: var(--columns) / var(--rows);
-      display: grid;
-      grid-template-columns: 1fr;
-      grid-template-rows: 1fr;
-      justify-items: center;
-      align-items: center;
-      margin: auto;
-    }
-
-    canvas {
-      grid-row: 1;
-      grid-column: 1;
-      height: 100%;
-      width: 100%;
-    }
-
-    #letter-grid {
-      grid-row: 1;
-      grid-column: 1;
-      display: grid;
-      grid-template-columns: repeat(var(--columns), 1fr);
-      grid-template-rows: repeat(var(--rows), 1fr);
-      justify-items: center;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-    }
-
-    #masked-letter-grid {
-      grid-row: 1;
-      grid-column: 1;
-      display: grid;
-      grid-template-columns: repeat(var(--columns), 1fr);
-      grid-template-rows: repeat(var(--rows), 1fr);
-      justify-items: center;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-    }
-
-    .mask {
-      image-rendering: pixelated;
-      mask: url(./img/mask.png) luminance;
-      mask-position: calc(var(--random-1)*1px);
-    }
-
-    .letter {
-      aspect-ratio: 1;
-      display:flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100%;
-      text-transform: uppercase;
-      font-family: medodica;
-    }
-
-    #noise {
-      image-rendering: pixelated;
-      grid-row: 1;
-      grid-column: 1;
-      display: block;
-      height: 100%;
-      width: 100%;
-      background-image: url(./img/noise.png), url(./img/scribble.png);
-      background-position-x: calc(var(--random-2)*1px);
-      background-position-y: calc(var(--random-3)*1px);
-    }
-
-    .pillar-box {
-        height: 100%;
-        width: auto;
-    }
-
-    .letter-box {
-        height: auto;
-        width: 100%;
-    }
-
-    .pointer-none {
-      pointer-events: none;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <div id="captcha-container">
-    <div id="wordsearch-container">
-      <canvas id="selection-canvas"></canvas>
-      <canvas id="underlay-canvas"></canvas>
-      <div id="letter-grid" class="pointer-none"></div>
-      <div id="masked-letter-grid" class="pointer-none"></div>
+    <svg id="letter-filter" width="100%" height="100%" class="grid-1-1">
+          <filter id="distort" color-interpolation-filters="sRGB">
+              <feImage href="" result="noise"/>
+              <feBlend in="SourceGraphic" in2="noise" mode="normal" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G">
+          </filter>
+    </svg>
+    <canvas id="selection-canvas" class="grid-1-1"></canvas>
+    <canvas id="underlay-canvas" class="grid-1-1"></canvas>
+    <div id="letter-grid-container" class="pointer-none grid-1-1">
+      <div id="letter-grid"></div>
     </div>
-    <div id="noise" class="pointer-none"></div>
-    <div id="instructions-overlay">
+    <div id="noise" class="pointer-none grid-1-1"></div>
+    <div id="instructions-overlay" class="grid-1-1">
       <h2>Solve this word search to continue.</h1>
-        <button id="start-button">Start</button>
+      <button id="start-button">Start</button>
     </div>
   </div>
   <script type="module" src="main.js"></script>

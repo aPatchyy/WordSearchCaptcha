@@ -2,14 +2,14 @@ import { DIRECTION, shuffle, print } from "./util.js"
 import { DirectedLocation } from "./directed-location.js"
 
 export class RandomLocator {
-    constructor(allowedDirections, sizeX, sizeY = 0) {
-        sizeY = sizeY === 0 ? sizeX : sizeY
+    constructor(allowedDirections, columns, rows = 0) {
+        rows = rows === 0 ? columns : rows
         this.locations = []
         
-        for(let i=0; i<sizeX; i++) {
-            for(let j=0; j<sizeY; j++) {
+        for(let column=0; column<columns; column++) {
+            for(let row=0; row<rows; row++) {
                 allowedDirections.forEach(direction => {
-                    this.locations.push(new DirectedLocation(i, j, direction))
+                    this.locations.push(new DirectedLocation(column, row, direction))
                 })
             }
         }

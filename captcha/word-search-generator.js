@@ -8,12 +8,12 @@ const OPERATION_MODE = {
 }
 
 export class WordSearchGenerator {
-    constructor(wordList, allowedDirections, sizeX, sizeY = 0) {
+    constructor(wordList, allowedDirections, columns, rows = 0) {
         this.wordList = wordList
-        this.sizeX = sizeX
-        this.sizeY = sizeY === 0 ? sizeX : sizeY
+        this.columns = columns
+        this.rows = rows === 0 ? columns : rows
         this.mode = OPERATION_MODE.FORWARD
-        this.globalLocator = new RandomLocator(allowedDirections, sizeX, sizeY)
+        this.globalLocator = new RandomLocator(allowedDirections, columns, rows)
     }
 
     execute() {
@@ -37,16 +37,16 @@ export class WordSearchGenerator {
             }
         }
 
-        let letterGrid = Array.from({length: this.sizeY}, _ => Array.from({length: this.sizeX}, _ => " "))
-
+        let letterGrid = Array.from({length: this.rows}, _ => Array.from({length: this.columns}, _ => randomLetter()))
         this.wordList.forEach(word => {
             let locations = word.getAllLocations()
             locations.forEach(location => {
-                letterGrid[location.y][location.x] = word.letterAt(location)
+                letterGrid[location.row][location.column] = word.letterAt(location)
             })
         })
         return letterGrid
     }
+
 
     #placeWord(word) {
         let globalExcludingTested = this.globalLocator.excluding(word.testedLocations)
@@ -79,7 +79,7 @@ export class WordSearchGenerator {
         let wordLocations = wordToTest.getAllLocations()
         let lastLocation = wordLocations.at(-1)
         
-        if(lastLocation.x < 0 || lastLocation.x > this.sizeX - 1 || lastLocation.y < 0 || lastLocation.y > this.sizeY - 1) {
+        if(lastLocation.row < 0 || lastLocation.row > this.rows - 1 || lastLocation.column < 0 || lastLocation.column > this.columns - 1) {
             wordToTest.unplace()
             return false
         }
