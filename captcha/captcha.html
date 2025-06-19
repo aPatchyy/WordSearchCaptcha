@@ -10,7 +10,7 @@
 <body>
   <div id="captcha-container">
     <svg id="letter-filter" width="100%" height="100%" class="grid-1-1">
-          <filter id="distort" color-interpolation-filters="sRGB">
+          <filter id="displace" color-interpolation-filters="sRGB">
               <feImage href="" result="noise"/>
               <feBlend in="SourceGraphic" in2="noise" mode="normal" />
               <feDisplacementMap in="SourceGraphic" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G">

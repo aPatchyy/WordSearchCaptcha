@@ -3,11 +3,16 @@ import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
 import { DIRECTION, gaussianRandom, print} from "./util.js"
 
+// Change these to adjust difficulty
 const NUMBER_OF_WORDS = 4
 const ROWS = 5
 const COLUMNS = 6
-const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.DOWN, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
-const DISTORTION_SCALE = 30
+const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.DOWN, DIRECTION.UP, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
+const NOISE_IMAGES = ["scribble.png", "perlin2.png"]
+const ENABLE_BACKGROUND_NOISE = true
+const ENABLE_DISPLACEMENT_EFFECT = true
+const DISPLACEMENT_SCALE = 27
+
 
 const container = document.getElementById("captcha-container")
 const containerWidth = container.getBoundingClientRect().width
@@ -16,10 +21,13 @@ const CANVAS_WIDTH = containerWidth > containerHeight ? (COLUMNS / ROWS) * conta
 const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS / COLUMNS) * containerWidth
 const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
 
-const STROKE_RADIUS = SQUARE_SIZE / 2.75
+//  Change these as needed for different fonts and board sizes
+const STROKE_RADIUS = SQUARE_SIZE * 0.35
 const FONT_SIZE = SQUARE_SIZE * 0.6
 
+const letterGridContainer = document.getElementById("letter-grid-container")
 const letterGrid = document.getElementById("letter-grid")
+const noiseElement = document.getElementById("noise")
 const underlayCanvas = document.getElementById("underlay-canvas")
 const underlayContext = underlayCanvas.getContext("2d")
 underlayCanvas.width = CANVAS_WIDTH
@@ -48,6 +56,20 @@ if(containerWidth / containerHeight > COLUMNS / ROWS) {
     selectionCanvas.classList.add("letter-box")
 }
 
+if(ENABLE_DISPLACEMENT_EFFECT) {
+    underlayCanvas.classList.add("displace")
+    selectionCanvas.classList.add("displace")
+    letterGridContainer.classList.add("displace")
+}
+
+if(ENABLE_BACKGROUND_NOISE) {
+    let backgroundImage = ""
+    NOISE_IMAGES.forEach(filename => {
+        backgroundImage += " url(img/" + filename + "),"
+    })
+    noiseElement.style.backgroundImage = backgroundImage.slice(0, -1)
+}
+
 let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, COLUMNS, ROWS)
 let colorIndex = Math.floor(COLORS.length * Math.random())
 let selectionStart = null
@@ -57,20 +79,12 @@ initialize()
 
 document.getElementById("start-button").addEventListener('click', () => {
     document.getElementById("instructions-overlay").style.display = "none"
+    container.addEventListener('touchmove', (e) => e.preventDefault())
 })
 
 container.addEventListener("contextmenu", (e) => e.preventDefault())
-underlayCanvas.addEventListener('touchmove', (e) => e.preventDefault())
 underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
 underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
-
-//FOR TESTING
-window.addEventListener('keydown', (e) => {
-    if(e.key == " ")
-        refresh()
-})
-
-
 async function initialize() {
     wordSearch.generate()
     for(let row=0; row<ROWS; row++) {
@@ -84,9 +98,9 @@ async function initialize() {
             letterGrid.append(div)
         }
     }
-    let map = await createDisplacementMap(39, 30)
+    let map = await createDisplacementMap(Math.round(containerWidth/10), Math.round(containerHeight/10))
     document.querySelector("feImage").setAttribute("href", map)
-    document.querySelector("feDisplacementMap").setAttribute("scale", DISTORTION_SCALE)
+    document.querySelector("feDisplacementMap").setAttribute("scale", DISPLACEMENT_SCALE)
 }
 
 function refresh() {
@@ -196,6 +210,8 @@ function drawStroke(context, startX, startY, endX, endY, radius,  color) {
 }
 
 function createDisplacementMap(width, height, sigma = 0.2) {
+    if(width === 0 || height === 0)
+        return ""
     const canvas = new OffscreenCanvas(width, height)
     const context = canvas.getContext("2d")
     const imageData = context.createImageData(width, height)
