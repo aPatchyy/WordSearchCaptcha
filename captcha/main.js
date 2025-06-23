@@ -4,15 +4,32 @@ import { COLORS } from "./colors.js"
 import { DIRECTION, gaussianRandom, print } from "./util.js"
 
 // Change these to adjust difficulty
-const NUMBER_OF_WORDS = 4
+//  Number of words to place and find in the puzzle
+const NUMBER_OF_WORDS = 6
+
+//  Letter grid dimensions
 const ROWS = 5
 const COLUMNS = 6
-const ALLOWED_DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.DOWN, DIRECTION.UP, DIRECTION.UP_RIGHT, DIRECTION.DOWN_RIGHT]
+
+//  Directions words can be placed (all directions located in util)
+const ALLOWED_DIRECTIONS = [
+    DIRECTION.RIGHT,
+    DIRECTION.DOWN,
+    DIRECTION.UP_RIGHT,
+    DIRECTION.DOWN_RIGHT
+]
+
+//  Images applied to background of noise element
+const ENABLE_NOISE = true
 const NOISE_IMAGES = ["scribble.png", "perlin2.png"]
-const ENABLE_BACKGROUND_NOISE = true
+
+//  Make the letters (and strokes) wobbly like typical captchas
 const ENABLE_DISPLACEMENT_EFFECT = true
 const DISPLACEMENT_SCALE = 27
 
+//  Generate new puzzle afterexceeding a number of incorrect selections
+const ENABLE_FAILING = true
+const MAX_INCORRECT_SELECTIONS = 5
 
 const container = document.getElementById("captcha-container")
 const containerWidth = container.getBoundingClientRect().width
@@ -26,14 +43,22 @@ const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
 const STROKE_RADIUS = SQUARE_SIZE * 0.35
 const FONT_SIZE = SQUARE_SIZE * 0.6
 
+const canvasContainer = document.getElementById("canvas-container")
+const instructionOverlay = document.getElementById("instructions-overlay")
+const instructionMessage = instructionOverlay.querySelector("h2")
+instructionMessage.textContent = "Solve this word search to continue. Find all " + NUMBER_OF_WORDS + " words."
+
+const startButton = instructionOverlay.querySelector("button")
 const letterGridContainer = document.getElementById("letter-grid-container")
 const letterGrid = document.getElementById("letter-grid")
 const noiseElement = document.getElementById("noise")
+
 const underlayCanvas = document.getElementById("underlay-canvas")
 const underlayContext = underlayCanvas.getContext("2d")
 underlayCanvas.width = CANVAS_WIDTH
 underlayCanvas.height = CANVAS_HEIGHT
 underlayContext.globalAlpha = 0.6
+
 const selectionCanvas = document.getElementById("selection-canvas")
 const selectionContext = selectionCanvas.getContext("2d")
 selectionCanvas.width = CANVAS_WIDTH
@@ -42,10 +67,6 @@ selectionContext.globalAlpha = 0.5
 
 document.documentElement.style.setProperty("--rows", `${ROWS}`)
 document.documentElement.style.setProperty("--columns", `${COLUMNS}`)
-
-document.documentElement.style.setProperty("--random-1", `${1000 * 2 * (Math.random() - 0.5)}`)
-document.documentElement.style.setProperty("--random-2", `${1000 * 2 * (Math.random() - 0.5)}`)
-document.documentElement.style.setProperty("--random-3", `${1000 * 2 * (Math.random() - 0.5)}`)
 
 if (containerWidth / containerHeight > COLUMNS / ROWS) {
     letterGrid.classList.add("pillar-box")
@@ -58,14 +79,13 @@ if (containerWidth / containerHeight > COLUMNS / ROWS) {
 }
 
 if (ENABLE_DISPLACEMENT_EFFECT) {
-    if(navigator.userAgent.indexOf("Safari") === -1) {
-        underlayCanvas.classList.add("displace")
-        selectionCanvas.classList.add("displace")
+    if (navigator.userAgent.indexOf("Safari") === -1) {
+        canvasContainer.classList.add("displace")
     }
     letterGridContainer.classList.add("displace")
 }
 
-if (ENABLE_BACKGROUND_NOISE) {
+if (ENABLE_NOISE) {
     let backgroundImage = ""
     NOISE_IMAGES.forEach(filename => {
         backgroundImage += " url(img/" + filename + "),"
@@ -77,17 +97,17 @@ let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, COLU
 let colorIndex = Math.floor(COLORS.length * Math.random())
 let selectionStart = null
 let selectionEnd = null
+let incorrectSelections = 0
 
-initialize()
-
-document.getElementById("start-button").addEventListener('click', () => {
-    document.getElementById("instructions-overlay").style.display = "none"
+startButton.addEventListener('click', () => {
+    instructionOverlay.style.display = "none"
     container.addEventListener('touchmove', (e) => e.preventDefault())
 })
 
 container.addEventListener("contextmenu", (e) => e.preventDefault())
 underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
 underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
+
 async function initialize() {
     wordSearch.generate()
     for (let row = 0; row < ROWS; row++) {
@@ -101,8 +121,10 @@ async function initialize() {
             letterGrid.append(div)
         }
     }
-    let map = await createDisplacementMap(Math.round(containerWidth / 10), Math.round(containerHeight / 10))
-    document.querySelector("feImage").setAttribute("href", map)
+    noiseElement.style.backgroundPositionX = `${1000 * 2 * (Math.random() - 0.5)}%`
+    noiseElement.style.backgroundPositionY = `${1000 * 2 * (Math.random() - 0.5)}%`
+    let mapURL = await createDisplacementMap(Math.round(containerWidth / 10), Math.round(containerHeight / 10))
+    document.querySelector("feImage").setAttribute("href", mapURL)
     document.querySelector("feDisplacementMap").setAttribute("scale", DISPLACEMENT_SCALE)
 }
 
@@ -112,16 +134,13 @@ function refresh() {
     letterGrid.innerHTML = ''
     selectionStart = null
     selectionEnd = null
+    incorrectSelections = 0
     colorIndex = Math.floor(COLORS.length * Math.random())
-    document.documentElement.style.setProperty("--random-1", `${1000 * 2 * (Math.random() - 0.5)}`)
-    document.documentElement.style.setProperty("--random-2", `${1000 * 2 * (Math.random() - 0.5)}`)
-    document.documentElement.style.setProperty("--random-3", `${1000 * 2 * (Math.random() - 0.5)}`)
     initialize()
 }
 
 function handleSelectionStart(e) {
     if (!e.isPrimary) return
-    
     let rect = underlayCanvas.getBoundingClientRect();
     let mouseX = (e.clientX - rect.left) * CANVAS_WIDTH / rect.width
     let mouseY = (e.clientY - rect.top) * CANVAS_HEIGHT / rect.height
@@ -136,28 +155,33 @@ function handleSelectionStart(e) {
         centerX,
         centerY
     }
-    
     underlayCanvas.setPointerCapture(e.pointerId)
     underlayCanvas.addEventListener("pointermove", handleSelectionMove)
-
 }
 
 function handleSelectionEnd(e) {
     underlayCanvas.releasePointerCapture(e.pointerId)
     underlayContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     if (selectionEnd !== null) {
-
-        let selection = wordSearch.stringFromSelection(selectionStart.column, selectionStart.row, selectionEnd.column, selectionEnd.row)
-        if (wordSearch.checkWord(selection)) {
+        let selectedWord = wordSearch.stringFromSelection(selectionStart.column, selectionStart.row, selectionEnd.column, selectionEnd.row)
+        if (wordSearch.checkWord(selectedWord)) {
             drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
             colorIndex = (colorIndex + 1) % COLORS.length
         } else {
+            incorrectSelections++
             drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, "red")
             setTimeout(() => underlayContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), 200)
         }
 
         if (wordSearch.isSolved()) {
             setTimeout(() => window.top.postMessage("success", '*'), 1000);
+        }
+
+        if (ENABLE_FAILING && incorrectSelections >= MAX_INCORRECT_SELECTIONS) {
+            instructionMessage.textContent = "Too many incorrect words selected."
+            startButton.textContent = "Try Again"
+            instructionOverlay.style.display = "flex"
+            refresh()
         }
     }
 
@@ -175,13 +199,13 @@ function handleSelectionMove(e) {
     let relativeMagnitude = Math.sqrt(relativeX * relativeX + relativeY * relativeY)
     let angle = Math.atan2(relativeY, relativeX)
     let snappedAngle = (Math.PI / 4) * Math.round(angle * (4 / Math.PI))
-    let snapLength = ((180 / Math.PI) * snappedAngle % 90 == 0 ? 1 : Math.sqrt(2)) * SQUARE_SIZE
-    let snappedMagnitude = snapLength * Math.round(relativeMagnitude / snapLength)
+    let snapUnit = ((180 / Math.PI) * snappedAngle % 90 == 0 ? 1 : Math.sqrt(2)) * SQUARE_SIZE
+    let snappedMagnitude = snapUnit * Math.round(relativeMagnitude / snapUnit)
     let snappedMouseX = selectionStart.centerX + snappedMagnitude * Math.cos(snappedAngle)
     let snappedMouseY = selectionStart.centerY + snappedMagnitude * Math.sin(snappedAngle)
 
     while (snappedMouseX > CANVAS_WIDTH || snappedMouseX < 0 || snappedMouseY > CANVAS_HEIGHT || snappedMouseY < 0) {
-        snappedMagnitude -= snapLength
+        snappedMagnitude -= snapUnit
         snappedMouseX = selectionStart.centerX + snappedMagnitude * Math.cos(snappedAngle)
         snappedMouseY = selectionStart.centerY + snappedMagnitude * Math.sin(snappedAngle)
     }
@@ -234,3 +258,5 @@ function createDisplacementMap(width, height, sigma = 0.2) {
     context.putImageData(imageData, 0, 0)
     return canvas.convertToBlob().then(blob => URL.createObjectURL(blob))
 }
+
+initialize()
