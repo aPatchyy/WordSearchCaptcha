@@ -5,9 +5,9 @@ export class RandomLocator {
     constructor(allowedDirections, columns, rows = 0) {
         rows = rows === 0 ? columns : rows
         this.locations = []
-        
-        for(let column=0; column<columns; column++) {
-            for(let row=0; row<rows; row++) {
+
+        for (let column = 0; column < columns; column++) {
+            for (let row = 0; row < rows; row++) {
                 allowedDirections.forEach(direction => {
                     this.locations.push(new DirectedLocation(column, row, direction))
                 })
@@ -15,7 +15,7 @@ export class RandomLocator {
         }
         this.locations = shuffle(this.locations)
     }
-    
+
     get size() {
         return this.locations.length
     }
@@ -29,7 +29,7 @@ export class RandomLocator {
     }
 
     remove(locationToRemove) {
-        this.locations = 
+        this.locations =
             this.locations.filter(location => !location.equals(locationToRemove))
         return locationToRemove
     }
@@ -39,7 +39,7 @@ export class RandomLocator {
 
         this.locations.forEach(location => {
             let shouldExclude = locationsToExclude.some(locationToExclude => locationToExclude.equals(location))
-            if(!shouldExclude)
+            if (!shouldExclude)
                 locationsExcluding.push(location)
         })
         return locationsExcluding

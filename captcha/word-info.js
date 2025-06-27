@@ -31,11 +31,11 @@ export class WordInfo {
 
     letterAt(location) {
         let index = -1
-        if(this.location.direction === DIRECTION.RIGHT || this.location.direction === DIRECTION.LEFT) {
+        if ((this.location.direction === DIRECTION.RIGHT || this.location.direction === DIRECTION.LEFT) && this.location.row - location.row === 0 ) {
             index = Math.abs(this.location.column - location.column)
-        } else if(this.location.direction === DIRECTION.UP || this.location.direction === DIRECTION.DOWN) {
+        } else if ((this.location.direction === DIRECTION.UP || this.location.direction === DIRECTION.DOWN) && this.location.column - location.column === 0) {
             index = Math.abs(this.location.row - location.row)
-        } else if(Math.abs(this.location.column - location.column) === Math.abs(this.location.row - location.row)){
+        } else if (Math.abs(this.location.column - location.column) === Math.abs(this.location.row - location.row)) {
             index = Math.abs(this.location.column - location.column)
         }
         return index < 0 ? null : this.value[index]
@@ -43,37 +43,39 @@ export class WordInfo {
 
     getAllLocations() {
         let locations = []
-        if(this.location !== null) {
-            for(let i=0; i<this.value.length; i++) {
-                let column = this.location.column
-                let row = this.location.row
-
-                switch(this.location.direction) {
-                    case DIRECTION.RIGHT:
-                    case DIRECTION.UP_RIGHT:
-                    case DIRECTION.DOWN_RIGHT:
-                        column += i
-                        break
-                    case DIRECTION.LEFT:
-                    case DIRECTION.UP_LEFT:
-                    case DIRECTION.DOWN_LEFT:
-                        column -= i
-                        break
-                }
-
-                switch(this.location.direction) {
-                    case DIRECTION.UP:
-                    case DIRECTION.UP_RIGHT:
-                    case DIRECTION.UP_LEFT:
-                        row -= i
-                        break
-                    case DIRECTION.DOWN:
-                    case DIRECTION.DOWN_RIGHT:
-                    case DIRECTION.DOWN_LEFT:
-                        row += i
-                        break
-                }
+        if (this.location !== null) {
+            let column = this.location.column
+            let row = this.location.row
+            let dColumn = 0
+            let dRow = 0
+            switch (this.location.direction) {
+                case DIRECTION.RIGHT:
+                case DIRECTION.UP_RIGHT:
+                case DIRECTION.DOWN_RIGHT:
+                    dColumn = 1
+                    break
+                case DIRECTION.LEFT:
+                case DIRECTION.UP_LEFT:
+                case DIRECTION.DOWN_LEFT:
+                    dColumn = -1
+                    break
+            }
+            switch (this.location.direction) {
+                case DIRECTION.UP:
+                case DIRECTION.UP_RIGHT:
+                case DIRECTION.UP_LEFT:
+                    dRow = -1
+                    break
+                case DIRECTION.DOWN:
+                case DIRECTION.DOWN_RIGHT:
+                case DIRECTION.DOWN_LEFT:
+                    dRow = 1
+                    break
+            }
+            for (let i = 0; i < this.value.length; i++) {
                 locations.push(new DirectedLocation(column, row, this.location.direction))
+                column += dColumn
+                row += dRow
             }
         }
         return locations
@@ -85,15 +87,15 @@ export class WordInfo {
         let otherLocations = otherWordInfo.getAllLocations()
         if (otherLocations.length == 0)
             return false
-        for(let i=0; i<locations.length; i++) {
+        for (let i = 0; i < locations.length; i++) {
             let location = locations[i]
-            for(let j=0; j<otherLocations.length; j++) {
+            for (let j = 0; j < otherLocations.length; j++) {
                 let otherLocation = otherLocations[j]
-                if(location.equals(otherLocation)) {
+                if (location.equals(otherLocation)) {
                     return true
                 }
-                if(location.column === otherLocation.column && location.row === otherLocation.row && location.direction !== otherLocation.direction) {
-                    if(this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)){
+                if (location.column === otherLocation.column && location.row === otherLocation.row && location.direction !== otherLocation.direction) {
+                    if (this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)) {
                         return true
                     }
                 }

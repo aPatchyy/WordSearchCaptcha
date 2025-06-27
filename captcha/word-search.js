@@ -28,10 +28,10 @@ export class WordSearch {
     generate() {
         this.words = []
         let wordsOfSize = this.availableWords.filter(word => word.length <= Math.max(this.columns, this.rows))
-        while(this.words.length < this.numberOfWords) {
+        while (this.words.length < this.numberOfWords) {
             let randomIndex = Math.floor(wordsOfSize.length * Math.random())
             let randomWord = wordsOfSize[randomIndex]
-            if(!this.words.includes(randomWord))
+            if (!this.words.includes(randomWord))
                 this.words.push(randomWord)
         }
         this.wordsLeft = [...this.words]
@@ -44,11 +44,11 @@ export class WordSearch {
         }
     }
 
-  
+
     stringFromSelection(startColumn, startRow, endColumn, endRow) {
         var length
         var str = ""
-        if(startColumn == endColumn) {
+        if (startColumn == endColumn) {
             length = Math.abs(endRow - startRow)
         } else {
             length = Math.abs(endColumn - startColumn)
@@ -56,14 +56,14 @@ export class WordSearch {
         let row = startRow
         let column = startColumn
         str += this.letters[row][column]
-        for(let i=0; i<length; i++) {
-            if(startRow != endRow)
+        for (let i = 0; i < length; i++) {
+            if (startRow != endRow)
                 row += startRow < endRow ? 1 : -1
-            if(startColumn != endColumn)
+            if (startColumn != endColumn)
                 column += startColumn < endColumn ? 1 : -1
             str += this.letters[row][column]
         }
         return str
     }
-    
+
 }

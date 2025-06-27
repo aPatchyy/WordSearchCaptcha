@@ -3,7 +3,6 @@ import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
 import { DIRECTION, gaussianRandom, print } from "./util.js"
 
-// Change these to adjust difficulty
 //  Number of words to place and find in the puzzle
 const NUMBER_OF_WORDS = 6
 
@@ -19,15 +18,15 @@ const ALLOWED_DIRECTIONS = [
     DIRECTION.DOWN_RIGHT
 ]
 
-//  Images applied to background of noise element
+//  Images applied to background of noise element and randomly offset
 const ENABLE_NOISE = true
-const NOISE_IMAGES = ["scribble.png", "perlin2.png"]
+const NOISE_IMAGES = ["scribble.png", "perlin.png"]
 
 //  Make the letters (and strokes) wobbly like typical captchas
 const ENABLE_DISPLACEMENT_EFFECT = true
-const DISPLACEMENT_SCALE = 27
+const DISPLACEMENT_SCALE = 25
 
-//  Generate new puzzle afterexceeding a number of incorrect selections
+//  Generate new puzzle after selecting maximum number of incorrect selections
 const ENABLE_FAILING = true
 const MAX_INCORRECT_SELECTIONS = 5
 
@@ -39,7 +38,7 @@ const CANVAS_HEIGHT = containerWidth > containerHeight ? containerHeight : (ROWS
 
 const SQUARE_SIZE = CANVAS_HEIGHT / ROWS
 
-//  Change these as needed for different fonts and board sizes
+//  Change these numbers as needed for different fonts and board sizes
 const STROKE_RADIUS = SQUARE_SIZE * 0.35
 const FONT_SIZE = SQUARE_SIZE * 0.6
 

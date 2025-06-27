@@ -17,14 +17,13 @@ export function shuffle(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
-        return array;
+    return array;
 }
 
-export function randomLetter(isUppercase = false) {
-  const startCharCode = isUppercase ? 65 : 97;
-  const randomInt = Math.floor(Math.random() * 26);
-  const charCode = startCharCode + randomInt;
-  return String.fromCharCode(charCode);
+export function randomLetter() {
+    const random = Math.floor(Math.random() * 26);
+    const code = 65 + random;
+    return String.fromCharCode(code);
 }
 
 export function reverseString(str) {
@@ -34,9 +33,9 @@ export function reverseString(str) {
 export function gaussianRandom(sigma = 1, mu = 0) {
     let u0 = Math.random()
     let u1 = Math.random()
-    while(u0 === 0) u0 = Math.random()
-    while(u1 === 0) u1 = Math.random()
+    while (u0 === 0) u0 = Math.random()
+    while (u1 === 0) u1 = Math.random()
     const z0 = Math.sqrt(-2.0 * Math.log(u0)) * Math.cos(2.0 * Math.PI * u1)
     const z1 = Math.sqrt(-2.0 * Math.log(u0)) * Math.sin(2.0 * Math.PI * u1)
-    return [mu + sigma*z0, mu + sigma*z1]
+    return [mu + sigma * z0, mu + sigma * z1]
 }

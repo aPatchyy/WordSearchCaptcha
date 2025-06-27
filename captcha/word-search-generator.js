@@ -3,8 +3,8 @@ import { randomLetter, print } from "./util.js"
 
 
 const OPERATION_MODE = {
-    FORWARD:0,
-    BACKWARD:1
+    FORWARD: 0,
+    BACKWARD: 1
 }
 
 export class WordSearchGenerator {
@@ -19,16 +19,15 @@ export class WordSearchGenerator {
     execute() {
         let currentWordIndex = 0
         let currentWord = this.wordList[currentWordIndex]
-        
-        while(true) {
-            if(this.#placeWord(currentWord)) {
-                if(currentWordIndex === this.wordList.length - 1)
+        while (true) {
+            if (this.#placeWord(currentWord)) {
+                if (currentWordIndex === this.wordList.length - 1)
                     break
                 currentWordIndex += 1
                 currentWord = this.wordList[currentWordIndex]
                 this.mode = OPERATION_MODE.FORWARD
             } else {
-                if(currentWordIndex == 0)
+                if (currentWordIndex == 0)
                     throw new Error("WordSearch Generation Failed")
                 currentWord.clearTestedLocations()
                 currentWordIndex -= 1
@@ -36,8 +35,7 @@ export class WordSearchGenerator {
                 this.mode = OPERATION_MODE.BACKWARD
             }
         }
-
-        let letterGrid = Array.from({length: this.rows}, _ => Array.from({length: this.columns}, _ => randomLetter()))
+        let letterGrid = Array.from({ length: this.rows }, _ => Array.from({ length: this.columns }, _ => randomLetter()))
         this.wordList.forEach(word => {
             let locations = word.getAllLocations()
             locations.forEach(location => {
@@ -50,19 +48,17 @@ export class WordSearchGenerator {
 
     #placeWord(word) {
         let globalExcludingTested = this.globalLocator.excluding(word.testedLocations)
-        
         let localLocator
-        if(this.mode === OPERATION_MODE.BACKWARD) {
+        if (this.mode === OPERATION_MODE.BACKWARD) {
             this.globalLocator.add(word.location)
             word.moveLocationToTested()
-            
+
             localLocator = globalExcludingTested
         } else {
             localLocator = this.globalLocator
         }
-
         let locationIndex = 0
-        while(locationIndex < localLocator.size) {
+        while (locationIndex < localLocator.size) {
             let locationCandidate = localLocator.getLocationAt([locationIndex])
             if (this.#validPlacement(word, locationCandidate)) {
                 this.globalLocator.remove(locationCandidate)
@@ -70,7 +66,7 @@ export class WordSearchGenerator {
             } else {
                 locationIndex++
             }
-        }   
+        }
         return false
     }
 
@@ -78,23 +74,19 @@ export class WordSearchGenerator {
         wordToTest.place(locationCandidate)
         let wordLocations = wordToTest.getAllLocations()
         let lastLocation = wordLocations.at(-1)
-        
-        if(lastLocation.row < 0 || lastLocation.row > this.rows - 1 || lastLocation.column < 0 || lastLocation.column > this.columns - 1) {
+        if (lastLocation.row < 0 || lastLocation.row > this.rows - 1 || lastLocation.column < 0 || lastLocation.column > this.columns - 1) {
             wordToTest.unplace()
             return false
         }
-
-
-        for(let i=0; i<this.wordList.length;i++) {
+        for (let i = 0; i < this.wordList.length; i++) {
             let word = this.wordList[i]
-            if(!wordToTest.equals(word)) {
-                if(wordToTest.conflict(word)) {
+            if (!wordToTest.equals(word)) {
+                if (wordToTest.conflict(word)) {
                     wordToTest.unplace()
                     return false
                 }
             }
         }
-
         return true
     }
 }
