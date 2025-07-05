@@ -89,7 +89,7 @@ export const WORDS = [
         "screen",
         "static",
         "stream",
-        "foler",
+        "folder",
         "disk",
         "yell",
         "worm",
