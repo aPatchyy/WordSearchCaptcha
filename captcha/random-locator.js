@@ -1,4 +1,4 @@
-import { DIRECTION, shuffle, print } from "./util.js"
+import { shuffle } from "./util.js"
 import { DirectedLocation } from "./directed-location.js"
 
 export class RandomLocator {

@@ -2,9 +2,9 @@ import { DirectedLocation } from "./directed-location.js"
 import { DIRECTION, print } from "./util.js"
 
 export class WordInfo {
-    constructor(string) {
+    constructor(string, location = null) {
         this.value = string
-        this.location = null
+        this.location = location
         this.testedLocations = []
     }
 
@@ -26,7 +26,7 @@ export class WordInfo {
     }
 
     equals(otherWord) {
-        return this.value === otherWord.value
+        return this.value === otherWord.value && this.location.equals(otherWord.location)
     }
 
     letterAt(location) {

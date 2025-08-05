@@ -1,9 +1,8 @@
 import { WordSearchGenerator } from "./word-search-generator.js"
 import { WordInfo } from "./word-info.js"
-import { reverseString, print } from "./util.js"
+
 export class WordSearch {
     constructor(availableWords, numberOfWords, allowedDirections, columns, rows = 0) {
-        this.words = []
         this.wordsLeft = []
         this.availableWords = availableWords
         this.columns = columns
@@ -13,29 +12,29 @@ export class WordSearch {
     }
 
     isSolved = () => this.wordsLeft.length === 0
-
+    
     checkWord(wordToCheck) {
-        if (this.wordsLeft.includes(wordToCheck)) {
-            this.wordsLeft = this.wordsLeft.filter(word => wordToCheck !== word)
-            return true
-        } else if (this.wordsLeft.includes(reverseString(wordToCheck))) {
-            this.wordsLeft = this.wordsLeft.filter(word => reverseString(wordToCheck) !== word)
-            return true
+        for(let i=0; i<this.wordsLeft.length; i++) {
+            let wordLeft = this.wordsLeft[i]
+            if(wordLeft.equals(wordToCheck)) {
+                this.wordsLeft = this.wordsLeft.filter(word => !wordLeft.equals(word))
+                return true
+            }
         }
         return false
     }
 
     generate() {
-        this.words = []
+        let words = []
         let wordsOfSize = this.availableWords.filter(word => word.length <= Math.max(this.columns, this.rows))
-        while (this.words.length < this.numberOfWords) {
+        while (words.length < this.numberOfWords) {
             let randomIndex = Math.floor(wordsOfSize.length * Math.random())
             let randomWord = wordsOfSize[randomIndex]
-            if (!this.words.includes(randomWord))
-                this.words.push(randomWord)
+            if (!words.includes(randomWord))
+                words.push(randomWord)
         }
-        this.wordsLeft = [...this.words]
-        let wordInfos = this.words.map(word => new WordInfo(word))
+        let wordInfos = words.map(word => new WordInfo(word))
+        this.wordsLeft = wordInfos
         let generator = new WordSearchGenerator(wordInfos, this.allowedDirections, this.columns, this.rows)
         try {
             this.letters = generator.execute()
@@ -43,7 +42,6 @@ export class WordSearch {
             this.generate()
         }
     }
-
 
     stringFromSelection(startColumn, startRow, endColumn, endRow) {
         var length

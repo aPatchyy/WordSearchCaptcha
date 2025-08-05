@@ -1,12 +1,14 @@
 import { WordSearch } from "./word-search.js"
 import { WORDS } from "./words.js"
 import { COLORS } from "./colors.js"
-import { DIRECTION, gaussianRandom, print } from "./util.js"
+import { WordInfo } from "./word-info.js"
+import { DirectedLocation } from "./directed-location.js"
+import { DIRECTION, print, reverseString, createDisplacementMap, invertDirection, angleToDirection, drawStroke } from "./util.js"
 
 //  Number of words to place and find in the puzzle
 const NUMBER_OF_WORDS = 6
 
-//  Letter grid dimensions
+//  Grid Dimensions
 const ROWS = 5
 const COLUMNS = 6
 
@@ -22,9 +24,10 @@ const ALLOWED_DIRECTIONS = [
 const ENABLE_NOISE = true
 const NOISE_IMAGES = ["scribble.png", "perlin.png"]
 
-//  Make the letters (and strokes) wobbly like typical captchas
-const ENABLE_DISPLACEMENT_EFFECT = true
-const DISPLACEMENT_SCALE = 25
+//  Make the letters (and/or strokes) wobbly like typical captchas
+const ENABLE_DISPLACEMENT_EFFECT_TEXT = false
+const ENABLE_DISPLACEMENT_EFFECT_STROKE = false
+const DISPLACEMENT_SCALE = 20
 
 //  Generate new puzzle after selecting maximum number of incorrect selections
 const ENABLE_FAILING = true
@@ -77,11 +80,14 @@ if (containerWidth / containerHeight > COLUMNS / ROWS) {
     selectionCanvas.classList.add("letter-box")
 }
 
-if (ENABLE_DISPLACEMENT_EFFECT) {
+if (ENABLE_DISPLACEMENT_EFFECT_TEXT) {
+    letterGridContainer.classList.add("displace")
+}
+
+if (ENABLE_DISPLACEMENT_EFFECT_STROKE) {
     if (navigator.userAgent.indexOf("Safari") === -1) {
         canvasContainer.classList.add("displace")
     }
-    letterGridContainer.classList.add("displace")
 }
 
 if (ENABLE_NOISE) {
@@ -96,6 +102,7 @@ let wordSearch = new WordSearch(WORDS, NUMBER_OF_WORDS, ALLOWED_DIRECTIONS, COLU
 let colorIndex = Math.floor(COLORS.length * Math.random())
 let selectionStart = null
 let selectionEnd = null
+let selectionDirection = null
 let incorrectSelections = 0
 
 startButton.addEventListener('click', () => {
@@ -106,6 +113,8 @@ startButton.addEventListener('click', () => {
 container.addEventListener("contextmenu", (e) => e.preventDefault())
 underlayCanvas.addEventListener("pointerdown", handleSelectionStart)
 underlayCanvas.addEventListener("pointerup", handleSelectionEnd)
+
+initialize()
 
 async function initialize() {
     wordSearch.generate()
@@ -133,6 +142,7 @@ function refresh() {
     letterGrid.innerHTML = ''
     selectionStart = null
     selectionEnd = null
+    selectionDirection = null
     incorrectSelections = 0
     colorIndex = Math.floor(COLORS.length * Math.random())
     initialize()
@@ -162,8 +172,12 @@ function handleSelectionEnd(e) {
     underlayCanvas.releasePointerCapture(e.pointerId)
     underlayContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     if (selectionEnd !== null) {
-        let selectedWord = wordSearch.stringFromSelection(selectionStart.column, selectionStart.row, selectionEnd.column, selectionEnd.row)
-        if (wordSearch.checkWord(selectedWord)) {
+
+        let selectedString = wordSearch.stringFromSelection(selectionStart.column, selectionStart.row, selectionEnd.column, selectionEnd.row)
+        let forwardWord = new WordInfo(selectedString, new DirectedLocation(selectionStart.column, selectionStart.row, selectionDirection))
+        let reverseWord = new WordInfo(reverseString(selectedString), new DirectedLocation(selectionEnd.column, selectionEnd.row, invertDirection(selectionDirection)))
+
+        if (wordSearch.checkWord(forwardWord) || wordSearch.checkWord(reverseWord)) {
             drawStroke(selectionContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
             colorIndex = (colorIndex + 1) % COLORS.length
         } else {
@@ -186,6 +200,7 @@ function handleSelectionEnd(e) {
 
     selectionStart = null
     selectionEnd = null
+    selectionDirection = null
     underlayCanvas.removeEventListener("pointermove", handleSelectionMove)
 }
 
@@ -214,6 +229,7 @@ function handleSelectionMove(e) {
     let centerX = (column + 0.5) * SQUARE_SIZE
     let centerY = (row + 0.5) * SQUARE_SIZE
 
+    selectionDirection = angleToDirection(snappedAngle * 180 / Math.PI)
     selectionEnd = {
         column,
         row,
@@ -224,38 +240,3 @@ function handleSelectionMove(e) {
     underlayContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     drawStroke(underlayContext, selectionStart.centerX, selectionStart.centerY, selectionEnd.centerX, selectionEnd.centerY, STROKE_RADIUS, COLORS[colorIndex])
 }
-
-function drawStroke(context, startX, startY, endX, endY, radius, color) {
-    let strokeAngle = Math.atan2(endY - startY, endX - startX)
-    let angle1 = strokeAngle + Math.PI / 2
-    let angle2 = angle1 + Math.PI
-    context.beginPath()
-    context.arc(startX, startY, radius, angle1, angle2)
-    context.arc(endX, endY, radius, angle2, angle1)
-    context.fillStyle = color
-    context.fill()
-    context.closePath()
-}
-
-function createDisplacementMap(width, height, sigma = 0.2) {
-    if (width === 0 || height === 0)
-        return ""
-    const canvas = new OffscreenCanvas(width, height)
-    const context = canvas.getContext("2d")
-    const imageData = context.createImageData(width, height)
-    const data = imageData.data
-    for (let i = 0; i < data.length; i++) {
-        for (let j = 0; j < 2; j++) {
-            let gaussianPair = gaussianRandom(sigma)
-            data[i + j] = 127 + Math.floor(128 * gaussianPair[0])
-            data[i + j] = 127 + Math.floor(128 * gaussianPair[1])
-            gaussianPair = gaussianRandom(0.15)
-            data[i + j + 2] = 127 + Math.floor(128 * gaussianPair[0])
-            data[i + j + 2] = 127 + Math.floor(128 * gaussianPair[1])
-        }
-    }
-    context.putImageData(imageData, 0, 0)
-    return canvas.convertToBlob().then(blob => URL.createObjectURL(blob))
-}
-
-initialize()
