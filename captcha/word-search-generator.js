@@ -1,6 +1,4 @@
 import { RandomLocator } from "./random-locator.js"
-import { randomLetter, print } from "./util.js"
-
 
 const OPERATION_MODE = {
     FORWARD: 0,
@@ -9,7 +7,7 @@ const OPERATION_MODE = {
 
 export class WordSearchGenerator {
     constructor(wordList, allowedDirections, columns, rows = 0) {
-        this.wordList = wordList
+        this.wordList = [...wordList]
         this.columns = columns
         this.rows = rows === 0 ? columns : rows
         this.mode = OPERATION_MODE.FORWARD
@@ -35,14 +33,7 @@ export class WordSearchGenerator {
                 this.mode = OPERATION_MODE.BACKWARD
             }
         }
-        let letterGrid = Array.from({ length: this.rows }, _ => Array.from({ length: this.columns }, _ => randomLetter()))
-        this.wordList.forEach(word => {
-            let locations = word.getAllLocations()
-            locations.forEach(location => {
-                letterGrid[location.row][location.column] = word.letterAt(location)
-            })
-        })
-        return letterGrid
+        return this.wordList
     }
 
 

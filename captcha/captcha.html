@@ -3,33 +3,44 @@
 
 <head>
   <meta charset="utf-8">
-  <title>WordSearch</title>
+  <title>Word Search Captcha</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <div id="captcha-container">
-    <svg id="letter-filter" width="100%" height="100%" class="grid-1-1">
-      <filter id="displace" color-interpolation-filters="sRGB">
-        <feImage href="" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G">
-      </filter>
-    </svg>
-    <div id="canvas-container" class="grid-1-1">
-      <canvas id="selection-canvas" class="grid-1-1"></canvas>
-      <canvas id="underlay-canvas" class="grid-1-1"></canvas>
-    </div>
-    <div id="letter-grid-container" class="pointer-none grid-1-1">
-      <div id="letter-grid"></div>
-    </div>
-    <div id="noise" class="pointer-none grid-1-1"></div>
-    <div id="instructions-overlay" class="grid-1-1">
-      <h2>Solve the word search to continue.</h2>
-      <button id="start-button">Start</button>
+    <div id="ws-container">
+      <div id="ws-header">
+        <div id="ws-instruction">
+          <span>Solve the word search to continue.</span>
+          <span></span>
+        </div>
+        <button id="refresh-button">
+          <svg xmlns="http://www.w3.org/2000/svg" height="26px" viewBox="0 -960 960 960" width="26px">
+            <path
+              d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z" />
+          </svg>
+        </button>
+      </div>
+      <div id="ws-challenge">
+        <svg width="100%" height="100%">
+          <filter id="displace" color-interpolation-filters="sRGB">
+            <feImage href="" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G">
+          </filter>
+        </svg>
+        <div id="canvas-container">
+          <canvas id="selection-canvas"></canvas>
+          <canvas id="underlay-canvas"></canvas>
+        </div>
+        <div id="letter-grid-container" class="pointer-none">
+          <div id="letter-grid"></div>
+        </div>
+      </div>
     </div>
   </div>
+  <script src="numberstowords/numberstowords.js"></script>
   <script type="module" src="main.js"></script>
 </body>
-
 </html>

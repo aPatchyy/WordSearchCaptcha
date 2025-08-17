@@ -1,5 +1,5 @@
 import { DirectedLocation } from "./directed-location.js"
-import { DIRECTION, print } from "./util.js"
+import { DIRECTION } from "./util.js"
 
 export class WordInfo {
     constructor(string, location = null) {

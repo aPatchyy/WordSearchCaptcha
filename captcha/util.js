@@ -1,3 +1,5 @@
+const GOLDEN_RATIO = (Math.sqrt(5) + 1) / 2
+
 export const DIRECTION = {
     RIGHT: 0,
     UP_RIGHT: 1,
@@ -7,10 +9,20 @@ export const DIRECTION = {
     DOWN_LEFT: 5,
     DOWN: 6,
     DOWN_RIGHT: 7,
+
+    invert(direction) {
+        return (direction + 4) % 8
+    },
+
+    angleToDirection(angleDegrees) {
+        const snappedAngle = 45 * Math.round(angleDegrees / 45)
+        return ((snappedAngle + 360) % 360) / 45
+    },
+
+    toString(direction) {
+        return Object.keys(DIRECTION)[direction]
+    }
 }
-
-
-export const print = console.log
 
 export function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -20,10 +32,21 @@ export function shuffle(array) {
     return array;
 }
 
+//  White noise
 export function randomLetter() {
     const random = Math.floor(Math.random() * 26);
-    const code = 97 + random;
+    const code = 65 + random;
     return String.fromCharCode(code);
+}
+
+//  Blue noise
+export function createLetterGenerator(seed) {
+  let value = seed == null ? Math.random() : seed
+  return () => {
+      value = (value + GOLDEN_RATIO) % 1
+      const code = 65 + 26 * value
+      return String.fromCharCode(code)
+  }
 }
 
 export function reverseString(str) {
@@ -40,55 +63,16 @@ export function gaussianRandom(sigma = 1, mu = 0) {
     return [mu + sigma * z0, mu + sigma * z1]
 }
 
-export function drawStroke(context, startX, startY, endX, endY, radius, color) {
-    let strokeAngle = Math.atan2(endY - startY, endX - startX)
+export function drawStroke(context, start, end, radius, color) {
+    let strokeAngle = Math.atan2(end.y - start.y, end.x - start.x)
     let angle1 = strokeAngle + Math.PI / 2
     let angle2 = angle1 + Math.PI
     context.beginPath()
-    context.arc(startX, startY, radius, angle1, angle2)
-    context.arc(endX, endY, radius, angle2, angle1)
+    context.arc(start.x, start.y, radius, angle1, angle2)
+    context.arc(end.x, end.y, radius, angle2, angle1)
     context.fillStyle = color
     context.fill()
     context.closePath()
-}
-
-
-export function angleToDirection(angle) {
-    let direction = null
-    switch(angle) {
-        case 0:
-            direction = DIRECTION.RIGHT
-            break;
-        case -45:
-            direction = DIRECTION.UP_RIGHT
-            break;
-        case -90:
-            direction = DIRECTION.UP
-            break;
-        case -135:
-            direction = DIRECTION.UP_LEFT
-            break;
-        case -180:
-            direction = DIRECTION.LEFT
-            break;
-        case 180:
-            direction = DIRECTION.LEFT
-            break;
-        case 135:
-            direction = DIRECTION.DOWN_LEFT
-            break;
-        case 90:
-            direction = DIRECTION.DOWN
-            break;
-        case 45:
-            direction = DIRECTION.DOWN_RIGHT
-            break;
-        }
-    return direction
-}
-
-export function invertDirection(direction) {
-    return (direction + 4) % 8
 }
 
 export function createDisplacementMap(width, height, sigma = 0.2) {
@@ -110,4 +94,12 @@ export function createDisplacementMap(width, height, sigma = 0.2) {
     }
     context.putImageData(imageData, 0, 0)
     return canvas.convertToBlob().then(blob => URL.createObjectURL(blob))
+}
+
+export function createColorGenerator(seedHue) {
+    let value = seedHue == null ? Math.random() : seedHue
+    return function() {
+        value = (value + GOLDEN_RATIO) % 1
+        return `hsl(${value}turn, 100%, 50%)`
+    }
 }

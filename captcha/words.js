@@ -171,7 +171,7 @@ export const WORDS = [
         "pyramid",
         "pinball",
         "transformation",
-        "crispy",
+        "crisp",
         "pest",
         "heaven",
         "moon",
@@ -210,4 +210,13 @@ export const WORDS = [
         "inflate",
         "blog",
         "cook",
+        "greed",
+        "crack",
+        "toe",
+        "eye",
+        "cup",
+        "udder",
+        "cell",
+        "jail",
+        "delete"
 ]
