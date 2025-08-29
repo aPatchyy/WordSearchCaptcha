@@ -10,8 +10,8 @@ export class DirectedLocation {
     }
 
     equals(otherLocation) {
-        return this.column == otherLocation.column &&
-            this.row == otherLocation.row &&
-            this.direction == otherLocation.direction
+        return this.column === otherLocation.column &&
+            this.row === otherLocation.row &&
+            this.direction === otherLocation.direction
     }
 }

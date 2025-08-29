@@ -7,7 +7,8 @@ import { DirectedLocation } from "./directed-location.js"
 
 export class WordSearch {
     static DIRECTIONS = [DIRECTION.RIGHT, DIRECTION.UP_RIGHT, DIRECTION.DOWN, DIRECTION.DOWN_RIGHT]
-    static GENERATION_ATTEMPTS = 100
+    static MAX_GENERATION_ATTEMPTS = 500
+    static MAX_SCORED_PUZZLES = 100
     constructor({
         words,
         rows,
@@ -93,10 +94,11 @@ export class WordSearch {
         }
         const availableWords = this.wordsUsed.length > 0 ? this.words.filter(word => !this.wordsUsed.includes(word)) : this.words
 
-        //  Attempt to generate several puzzles and track the best scoring one.
-        let bestScore = 0
-        let bestWords = null
-        for (let i = 0; i < WordSearch.GENERATION_ATTEMPTS; i++) {
+        //  Break after first valid puzzle is generated, stops after maximum attempts
+        let generationAttempts = 0
+        let wordsPlaced = null
+        while(generationAttempts < WordSearch.MAX_GENERATION_ATTEMPTS) {
+            generationAttempts++
             let wordsToPlace = []
             if (this.numberOfWords != null && availableWords.length > this.numberOfWords) {
                 while (wordsToPlace.length < this.numberOfWords) {
@@ -104,6 +106,75 @@ export class WordSearch {
                     const randomWord = availableWords[randomIndex]
                     if (!wordsToPlace.includes(randomWord))
                         wordsToPlace.push(randomWord)
+                }
+            } else {
+                wordsToPlace = availableWords
+            }
+
+             try {
+                wordsPlaced = new WordSearchGenerator(
+                    wordsToPlace.map(word => new WordInfo(word)),
+                    this.directions,
+                    this.columns,
+                    this.rows
+                ).execute()
+                break
+            } catch(error) {
+                continue
+            }
+        }
+
+        //  Finish creating puzzle if valid placement found
+        if (wordsPlaced != null) {
+            const randomLetter = createLetterGenerator()
+            if(!this.recycleWords) {
+                this.wordsUsed = this.wordsUsed.concat(wordsPlaced.map(wordInfo => wordInfo.value))
+            }
+            this.wordsPlaced = wordsPlaced
+            this.wordsFound = []
+            this.letterGrid = Array.from({ length: this.rows }, _ =>
+                Array.from({ length: this.columns }, _ =>
+                    this.fillEmpty ? randomLetter() : ""
+                )
+            )
+            wordsPlaced.forEach(word => {
+                const locations = word.getAllLocations()
+                locations.forEach(location => {
+                    this.letterGrid[location.row][location.column] = word.letterAt(location)
+                })
+            })
+        } else {
+            throw new Error("maximum word search generation attempts reached with no valid placement found.")
+        }
+    }
+
+    generateScored() {
+        //  Verify enough words to make puzzle and filter out words already used.
+        const numberOfWordsNotUsed = this.words.length - this.wordsUsed.length
+        if ((numberOfWordsNotUsed === 0 || numberOfWordsNotUsed < this.numberOfWords)) {
+                throw new Error("not enough words to generate word search.")
+        }
+        const availableWords = this.wordsUsed.length > 0 ? this.words.filter(word => !this.wordsUsed.includes(word)) : this.words
+
+        let bestPuzzle = {
+            words: null,
+            score: 0,
+            overlaps: 0,
+        }
+        
+        // Attempt to generate target number of puzzles, stop after maximum number of attempts
+        let puzzlesGenerated = 0
+        let generationAttempts = 0
+        while (generationAttempts < WordSearch.MAX_GENERATION_ATTEMPTS && puzzlesGenerated < WordSearch.MAX_SCORED_PUZZLES) {
+            generationAttempts++
+            let wordsToPlace = []
+            if (this.numberOfWords != null && availableWords.length > this.numberOfWords) {
+                while (wordsToPlace.length < this.numberOfWords) {
+                    const randomIndex = Math.floor(availableWords.length * Math.random())
+                    const randomWord = availableWords[randomIndex]
+                    if (!wordsToPlace.includes(randomWord)) {
+                        wordsToPlace.push(randomWord)
+                    }
                 }
             } else {
                 wordsToPlace = availableWords
@@ -121,32 +192,46 @@ export class WordSearch {
                 //  Anti-parallel directions (Up and Down, Left and Right, ...) are combined.
                 //  Score is the reciprocal of the direction with the largest count. 
                 //  More aligned words results in lower score.
+                //  Break ties in alignment scores by picking higher overlap count
                 const alignedDirectionsCount = Array(4).fill(0)
-                wordsPlaced.forEach(word => alignedDirectionsCount[word.location.direction % 4]++)
-                const score = 1 / Math.max(...alignedDirectionsCount)
-                if (score > bestScore) {
-                    bestScore = score
-                    bestWords = wordsPlaced
+                let overlapCount = 0
+                for (let i = 0; i < wordsPlaced.length; i++) {
+                    const placedDirection = wordsPlaced[i].location.direction
+                    alignedDirectionsCount[placedDirection % 4]++
+                    for (let j = i + 1; j < wordsPlaced.length; j++) {
+                        if(wordsPlaced[i].overlaps(wordsPlaced[j])) {
+                            overlapCount++
+                        }
+                    }
                 }
+                const alignmentScore = 1 / Math.max(...alignedDirectionsCount)
+                if (alignmentScore > bestPuzzle.score || (alignmentScore === bestPuzzle.score && overlapCount > bestPuzzle.overlaps)) {
+                    bestPuzzle = {
+                        words: wordsPlaced,
+                        score: alignmentScore,
+                        overlaps: overlapCount,
+                    }
+                }
+                puzzlesGenerated++
             } catch (error) {
                 continue
             }
         }
-
+        
         //  Finish creating puzzle from words with best score.
-        const randomLetter = createLetterGenerator()
-        if (bestWords != null) {
+        if (bestPuzzle.words != null) {
+            const randomLetter = createLetterGenerator()
             if(!this.recycleWords) {
-                this.wordsUsed = this.wordsUsed.concat(bestWords.map(wordInfo => wordInfo.value))
+                this.wordsUsed = this.wordsUsed.concat(bestPuzzle.words.map(wordInfo => wordInfo.value))
             }
-            this.wordsPlaced = bestWords
+            this.wordsPlaced = bestPuzzle.words
             this.wordsFound = []
             this.letterGrid = Array.from({ length: this.rows }, _ =>
                 Array.from({ length: this.columns }, _ =>
                     this.fillEmpty ? randomLetter() : ""
                 )
             )
-            bestWords.forEach(word => {
+            bestPuzzle.words.forEach(word => {
                 const locations = word.getAllLocations()
                 locations.forEach(location => {
                     this.letterGrid[location.row][location.column] = word.letterAt(location)

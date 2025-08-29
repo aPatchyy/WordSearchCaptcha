@@ -109,7 +109,7 @@ async function initialize() {
 
     //  Attempt to generate, switch to safer word search if error occurs.
     try {
-        stage.generate()
+        stage.generateScored()
     } catch (error) {
         STAGES[stageIndex] = new WordSearch({
             words: WORDS,
@@ -119,7 +119,7 @@ async function initialize() {
             numberOfWords: wordCount
         })
         stage = STAGES[stageIndex]
-        stage.generate()
+        stage.generateScored()
     }
 
     //  Populate letter grid element

@@ -151,8 +151,8 @@ body {
 }
 
 #captcha-container .fail {
-    background-color: #e5473c;
-    border-color: #e5473c;
+    background-color: #b2372e;
+    border-color: #b2372e;
 }
 
 #captcha-container .pass {

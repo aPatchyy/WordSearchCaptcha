@@ -81,7 +81,6 @@ export class WordInfo {
         return locations
     }
 
-
     conflict(otherWordInfo) {
         let locations = this.getAllLocations()
         let otherLocations = otherWordInfo.getAllLocations()
@@ -98,6 +97,23 @@ export class WordInfo {
                     if (this.letterAt(location) !== otherWordInfo.letterAt(otherLocation)) {
                         return true
                     }
+                }
+            }
+        }
+        return false
+    }
+
+    overlaps(otherWordInfo) {
+        let locations = this.getAllLocations()
+        let otherLocations = otherWordInfo.getAllLocations()
+        if (otherLocations.length == 0)
+            return false
+        for (let i = 0; i < locations.length; i++) {
+            let location = locations[i]
+            for (let j = 0; j < otherLocations.length; j++) {
+                let otherLocation = otherLocations[j]
+                if (location.column === otherLocation.column && location.row === otherLocation.row) {
+                    return true
                 }
             }
         }
